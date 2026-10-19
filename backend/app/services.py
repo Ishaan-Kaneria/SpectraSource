@@ -1,5 +1,7 @@
 import logging
 
+from sqlalchemy import select
+
 from app import audit
 from app.db import SessionLocal
 from app.generators import generate
@@ -8,6 +10,17 @@ from app.models import Job
 from app.schemas import GenerationParams, OutputType
 
 log = logging.getLogger(__name__)
+
+UNFINISHED = ("pending", "running")
+
+
+def _fail_unfinished(job: Job, error: str) -> None:
+    """Mark the job failed, and every artefact that never finished with `error`."""
+    for artifact in job.artifacts:
+        if artifact.status in UNFINISHED:
+            artifact.status = "failed"
+            artifact.error = error
+    job.status = "failed"
 
 
 def run_job(job_id: int) -> None:
@@ -57,7 +70,20 @@ def run_job(job_id: int) -> None:
         db.rollback()
         job = db.get(Job, job_id)
         if job:
-            job.status = "failed"
+            _fail_unfinished(job, "Generation was interrupted")
             db.commit()
     finally:
         db.close()
+
+
+def recover_interrupted_jobs() -> int:
+    """Fail jobs a previous process left pending or running. Jobs run in-process (BackgroundTasks
+    on a single worker), so anything unfinished at startup will never complete. Returns the count."""
+    with SessionLocal() as db:
+        jobs = db.scalars(select(Job).where(Job.status.in_(UNFINISHED))).all()
+        for job in jobs:
+            _fail_unfinished(job, "Generation was interrupted by a server restart")
+        db.commit()
+    if jobs:
+        log.warning("marked %d interrupted job(s) as failed", len(jobs))
+    return len(jobs)

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.jobs import router as jobs_router
 from app.config import get_settings
 from app.db import init_db
+from app.services import recover_interrupted_jobs
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,6 +15,7 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
+    recover_interrupted_jobs()
     yield
 
 

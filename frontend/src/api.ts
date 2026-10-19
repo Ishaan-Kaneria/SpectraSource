@@ -1,4 +1,4 @@
-import type { GenerationParams, Job, OutputType } from './types'
+import type { ArtifactVerify, AuditVerify, GenerationParams, Job, JobSummary, OutputType } from './types'
 
 export const API_BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 const BASE = API_BASE
@@ -28,13 +28,19 @@ export async function health(): Promise<{ status: string; llm_provider: string }
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    let detail = res.statusText
+    let detail: unknown = res.statusText
     try {
       detail = (await res.json()).detail ?? detail
     } catch {
       /* not JSON */
     }
-    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+    // FastAPI validation errors arrive as a list of {loc, msg}.
+    const text = Array.isArray(detail)
+      ? detail.map((d: { msg?: string }) => d?.msg ?? String(d)).join('; ')
+      : typeof detail === 'string'
+        ? detail
+        : JSON.stringify(detail)
+    throw new Error(text)
   }
   return res.json() as Promise<T>
 }
@@ -59,3 +65,15 @@ export async function getJob(id: number): Promise<Job> {
 
 export const downloadUrl = (artifactId: number, fmt: string) =>
   `${BASE}/api/artifacts/${artifactId}/download?fmt=${encodeURIComponent(fmt)}`
+
+export async function listJobs(limit = 30): Promise<JobSummary[]> {
+  return handle(await call(`${BASE}/api/jobs?limit=${limit}`, undefined, 30_000))
+}
+
+export async function verifyAudit(): Promise<AuditVerify> {
+  return handle(await call(`${BASE}/api/audit/verify`, undefined, 30_000))
+}
+
+export async function verifyArtifact(id: number): Promise<ArtifactVerify> {
+  return handle(await call(`${BASE}/api/artifacts/${id}/verify`, undefined, 30_000))
+}

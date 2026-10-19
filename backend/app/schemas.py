@@ -58,9 +58,28 @@ class JobSummary(BaseModel):
     source_name: str | None
     output_types: list[OutputType]
     created_at: datetime
+    source_kind: str
+    source_preview: str = Field(description="First 160 characters, whitespace collapsed")
+    artifact_statuses: dict[str, JobStatus] = Field(description="output_type -> status")
 
 
 class AuditVerifyOut(BaseModel):
     valid: bool
     entries: int
     broken_at: int | None = None
+
+
+class ArtifactVerifyOut(BaseModel):
+    """Tamper evidence for one artefact: its content still hashes to the stored value,
+    the audit log recorded that hash, and the audit chain itself is intact."""
+
+    artifact_id: int
+    content_hash: str | None
+    recomputed_hash: str | None
+    hash_matches: bool
+    audit_event_id: int | None
+    audit_event_hash: str | None
+    audit_recorded: bool
+    chain_valid: bool
+    chain_entries: int
+    verified: bool

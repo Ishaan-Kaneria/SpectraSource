@@ -13,7 +13,7 @@ OPENAI_DEFAULT_MODEL = "gpt-4o-mini"
 def get_provider() -> LLMProvider:
     s = get_settings()
     if s.llm_provider == "mock":
-        return MockProvider()
+        return MockProvider(delay=s.mock_delay_seconds)
     if s.llm_provider == "gemini":
         model = s.llm_model or GEMINI_DEFAULT_MODEL
         return GeminiProvider(

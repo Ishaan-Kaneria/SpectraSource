@@ -1,11 +1,11 @@
 export const OUTPUT_TYPES = [
-  { id: 'video', label: 'Video package' },
-  { id: 'linkedin', label: 'LinkedIn post' },
-  { id: 'twitter', label: 'Twitter/X thread' },
-  { id: 'advisory', label: 'Advisory' },
-  { id: 'infographic', label: 'Infographic' },
-  { id: 'executive_summary', label: 'Executive summary' },
-  { id: 'presentation', label: 'Presentation' },
+  { id: 'presentation', label: 'Presentation', short: 'Slides', blurb: 'Slide deck with speaker notes' },
+  { id: 'advisory', label: 'Advisory', short: 'Advisory', blurb: 'Formal security advisory' },
+  { id: 'executive_summary', label: 'Executive summary', short: 'Brief', blurb: 'One-page brief for leadership' },
+  { id: 'infographic', label: 'Infographic', short: 'Poster', blurb: 'Key facts as a visual poster' },
+  { id: 'linkedin', label: 'LinkedIn post', short: 'LinkedIn', blurb: 'Professional social post' },
+  { id: 'twitter', label: 'X thread', short: 'X thread', blurb: 'Short public thread' },
+  { id: 'video', label: 'Video package', short: 'Video', blurb: 'Script, storyboard and subtitles' },
 ] as const
 
 export type OutputType = (typeof OUTPUT_TYPES)[number]['id']
@@ -41,4 +41,35 @@ export interface Job {
   artifacts: Artifact[]
 }
 
+export interface JobSummary {
+  id: number
+  status: Status
+  source_name: string | null
+  source_kind?: string
+  source_preview?: string
+  output_types: OutputType[]
+  artifact_statuses?: Partial<Record<OutputType, Status>>
+  created_at: string
+}
+
+export interface AuditVerify {
+  valid: boolean
+  entries: number
+  broken_at: number | null
+}
+
+export interface ArtifactVerify {
+  artifact_id: number
+  content_hash: string | null
+  recomputed_hash: string | null
+  hash_matches: boolean
+  audit_event_id: number | null
+  audit_event_hash: string | null
+  audit_recorded: boolean
+  chain_valid: boolean
+  chain_entries: number
+  verified: boolean
+}
+
 export const labelFor = (t: OutputType) => OUTPUT_TYPES.find((o) => o.id === t)?.label ?? t
+export const shortLabelFor = (t: OutputType) => OUTPUT_TYPES.find((o) => o.id === t)?.short ?? t

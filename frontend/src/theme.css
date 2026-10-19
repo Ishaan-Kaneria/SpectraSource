@@ -1,0 +1,530 @@
+/*
+ * SpectraSource design tokens (Tailwind CSS v4, CSS-first).
+ * Theme: "Signal on Ink". Deep navy ink, a petrol-teal signal, a restrained saffron highlight.
+ * Rationale, contrast table and usage rules live in ../DESIGN.md.
+ *
+ * Imported from index.css AFTER `@import 'tailwindcss';`.
+ * Dark mode: add `.dark` to <html>. Light values apply otherwise.
+ */
+
+/* Fonts, self-hosted via Fontsource. Plex Sans variable with the width axis (wdth 75-100, wght 100-700). */
+@import '@fontsource-variable/ibm-plex-sans/wdth.css';
+@import '@fontsource-variable/ibm-plex-sans/wdth-italic.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+/* Devanagari subset only; downloaded by the browser only when Hindi/Marathi text is on screen. */
+@import '@fontsource/ibm-plex-sans-devanagari/devanagari-400.css';
+@import '@fontsource/ibm-plex-sans-devanagari/devanagari-500.css';
+@import '@fontsource/ibm-plex-sans-devanagari/devanagari-600.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  /* ---------- Colour roles ---------- */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-on-brand: var(--on-brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-ink: var(--ok-ink);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-ink: var(--warn-ink);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-bad-ink: var(--bad-ink);
+  --color-focus: var(--focus);
+  --color-scrim: var(--scrim);
+
+  /* ---------- Output formats: solid (icon/stripe), -soft (chip bg), -ink (text) ---------- */
+  --color-fmt-video: var(--fmt-video);
+  --color-fmt-video-soft: var(--fmt-video-soft);
+  --color-fmt-video-ink: var(--fmt-video-ink);
+  --color-fmt-linkedin: var(--fmt-linkedin);
+  --color-fmt-linkedin-soft: var(--fmt-linkedin-soft);
+  --color-fmt-linkedin-ink: var(--fmt-linkedin-ink);
+  --color-fmt-twitter: var(--fmt-twitter);
+  --color-fmt-twitter-soft: var(--fmt-twitter-soft);
+  --color-fmt-twitter-ink: var(--fmt-twitter-ink);
+  --color-fmt-advisory: var(--fmt-advisory);
+  --color-fmt-advisory-soft: var(--fmt-advisory-soft);
+  --color-fmt-advisory-ink: var(--fmt-advisory-ink);
+  --color-fmt-infographic: var(--fmt-infographic);
+  --color-fmt-infographic-soft: var(--fmt-infographic-soft);
+  --color-fmt-infographic-ink: var(--fmt-infographic-ink);
+  --color-fmt-executive_summary: var(--fmt-executive_summary);
+  --color-fmt-executive_summary-soft: var(--fmt-executive_summary-soft);
+  --color-fmt-executive_summary-ink: var(--fmt-executive_summary-ink);
+  --color-fmt-presentation: var(--fmt-presentation);
+  --color-fmt-presentation-soft: var(--fmt-presentation-soft);
+  --color-fmt-presentation-ink: var(--fmt-presentation-ink);
+  /* Contextual format colour: set data-fmt="<output_type>" on an ancestor, then use bg-fmt-soft / text-fmt-ink / border-fmt. */
+  --color-fmt: var(--fmt);
+  --color-fmt-soft: var(--fmt-soft);
+  --color-fmt-ink: var(--fmt-ink);
+
+  /* ---------- Type ---------- */
+  --font-sans: 'IBM Plex Sans Variable', 'IBM Plex Sans', 'IBM Plex Sans Devanagari', ui-sans-serif, system-ui,
+    -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Devanagari', sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji';
+  --font-display: 'IBM Plex Sans Variable', 'IBM Plex Sans', 'IBM Plex Sans Devanagari', ui-sans-serif, system-ui,
+    -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display--font-variation-settings: 'wdth' 87.5; /* semi-condensed headings */
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --text-2xs: 0.6875rem; /* 11px: overline / meta labels, use uppercase */
+  --text-2xs--line-height: 1rem;
+  --text-2xs--letter-spacing: 0.06em;
+  --text-xs: 0.75rem; /* 12px: captions, badges, timestamps */
+  --text-xs--line-height: 1.125rem;
+  --text-xs--letter-spacing: 0.01em;
+  --text-sm: 0.875rem; /* 14px: default UI text, inputs, buttons */
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem; /* 16px: reading text in previews */
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem; /* 18px: lead paragraphs, card titles */
+  --text-lg--line-height: 1.75rem;
+  --text-lg--letter-spacing: -0.005em;
+  --text-xl: 1.25rem; /* 20px: panel titles */
+  --text-xl--line-height: 1.75rem;
+  --text-xl--letter-spacing: -0.01em;
+  --text-2xl: 1.5rem; /* 24px: section headings */
+  --text-2xl--line-height: 2rem;
+  --text-2xl--letter-spacing: -0.015em;
+  --text-3xl: 1.875rem; /* 30px: page title */
+  --text-3xl--line-height: 2.25rem;
+  --text-3xl--letter-spacing: -0.02em;
+  --text-4xl: 2.25rem; /* 36px: hero */
+  --text-4xl--line-height: 2.5rem;
+  --text-4xl--letter-spacing: -0.025em;
+  --text-5xl: 3rem; /* 48px: slide titles in presentation preview */
+  --text-5xl--line-height: 1.05;
+  --text-5xl--letter-spacing: -0.03em;
+
+  /* ---------- Shape ---------- */
+  --radius-xs: 0.1875rem; /* 3px  kbd, inline code */
+  --radius-sm: 0.25rem; /* 4px  badges, checkboxes, tags */
+  --radius-md: 0.375rem; /* 6px  buttons, inputs, selects */
+  --radius-lg: 0.625rem; /* 10px cards, format tiles */
+  --radius-xl: 0.875rem; /* 14px panels, dialogs, popovers */
+  --radius-2xl: 1.25rem; /* 20px preview stages (slide/infographic frames) */
+
+  /* ---------- Elevation (theme-aware, values live in :root / .dark) ---------- */
+  --shadow-card: var(--elev-card);
+  --shadow-pop: var(--elev-pop);
+  --shadow-glow: var(--elev-glow);
+
+  /* ---------- Motion ---------- */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-exit: cubic-bezier(0.55, 0, 1, 0.45);
+  --default-transition-duration: 120ms;
+  --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-fade-in: fade-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-rise-in: rise-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-scale-in: scale-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-scan: scan 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  --animate-signal: signal 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+  /* A beam that sweeps across a progress track while a format is generating. */
+  @keyframes scan {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
+    }
+  }
+  /* Expanding ring behind a "running" status dot. */
+  @keyframes signal {
+    0% {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+    80%,
+    100% {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+}
+
+/* ======================= Light (default) ======================= */
+:root {
+  --canvas: #f3f6f9;
+  --surface: #ffffff;
+  --surface-2: #edf1f5;
+  --surface-3: #e1e7ee;
+  --line: #d8dfe7;
+  --line-strong: #7e8b9c;
+
+  --ink: #0c1b2e;
+  --ink-muted: #3e4c5e;
+  --ink-subtle: #5b687a;
+
+  --brand: #007480;
+  --brand-strong: #005c66;
+  --on-brand: #ffffff;
+  --brand-soft: #e2f3f4;
+  --brand-ink: #006670;
+
+  --accent: #cf700b;
+  --accent-soft: #fdf0de;
+  --accent-ink: #9c4a00;
+  --on-accent: #0c1b2e;
+
+  --ok: #1a7f45;
+  --ok-soft: #e3f4e9;
+  --ok-ink: #166b39;
+  --warn: #b07a00;
+  --warn-soft: #fbf1d6;
+  --warn-ink: #7a5600;
+  --bad: #c9302c;
+  --bad-soft: #fce9e8;
+  --bad-ink: #a61f1b;
+
+  --focus: #0a7480;
+  --selection: #bde6e9;
+  --scrim: rgb(12 27 46 / 0.45);
+
+  --fmt-video: #c52a38;
+  --fmt-video-soft: #fce9eb;
+  --fmt-video-ink: #a81e2c;
+  --fmt-linkedin: #0a66c2;
+  --fmt-linkedin-soft: #e5f0fb;
+  --fmt-linkedin-ink: #0a5cae;
+  --fmt-twitter: #3b4656;
+  --fmt-twitter-soft: #ebeef2;
+  --fmt-twitter-ink: #2f3947;
+  --fmt-advisory: #a45404;
+  --fmt-advisory-soft: #fcefe2;
+  --fmt-advisory-ink: #8c4600;
+  --fmt-infographic: #157a26;
+  --fmt-infographic-soft: #e6f4e2;
+  --fmt-infographic-ink: #0f6a20;
+  --fmt-executive_summary: #826705;
+  --fmt-executive_summary-soft: #f7f1da;
+  --fmt-executive_summary-ink: #6b5500;
+  --fmt-presentation: #bb2e7b;
+  --fmt-presentation-soft: #fbe7f1;
+  --fmt-presentation-ink: #a0226a;
+
+  /* contextual format colour falls back to brand */
+  --fmt: var(--brand);
+  --fmt-soft: var(--brand-soft);
+  --fmt-ink: var(--brand-ink);
+
+  --elev-card: 0 1px 2px 0 rgb(12 27 46 / 0.06), 0 1px 3px 0 rgb(12 27 46 / 0.04);
+  --elev-pop: 0 2px 4px -1px rgb(12 27 46 / 0.06), 0 14px 32px -6px rgb(12 27 46 / 0.16);
+  --elev-glow: 0 0 0 1px rgb(0 116 128 / 0.22), 0 6px 20px -4px rgb(0 116 128 / 0.32);
+
+  /* canvas signature */
+  --grid-line: rgb(12 27 46 / 0.05);
+  --canvas-glow: rgb(0 116 128 / 0.07);
+
+  color-scheme: light;
+}
+
+/* ======================= Dark ======================= */
+.dark {
+  --canvas: #0a111d;
+  --surface: #101a2a;
+  --surface-2: #162235;
+  --surface-3: #1d2b41;
+  --line: #24324a;
+  --line-strong: #5d6e88;
+
+  --ink: #e7edf5;
+  --ink-muted: #a8b5c6;
+  --ink-subtle: #8796aa;
+
+  --brand: #2bc4ce;
+  --brand-strong: #5dd6dd;
+  --on-brand: #04161c;
+  --brand-soft: #0c2f38;
+  --brand-ink: #5fd3db;
+
+  --accent: #f5974a;
+  --accent-soft: #36230f;
+  --accent-ink: #f8b27a;
+  --on-accent: #0a111d;
+
+  --ok: #3dbe77;
+  --ok-soft: #0f2c1e;
+  --ok-ink: #5ed394;
+  --warn: #edb03c;
+  --warn-soft: #33280c;
+  --warn-ink: #f3c766;
+  --bad: #da3633;
+  --bad-soft: #3a1518;
+  --bad-ink: #ff8a85;
+
+  --focus: #5ce1e6;
+  --selection: #1b4b55;
+  --scrim: rgb(2 6 12 / 0.66);
+
+  --fmt-video: #f06a78;
+  --fmt-video-soft: #3a1820;
+  --fmt-video-ink: #ff8d98;
+  --fmt-linkedin: #4c9bea;
+  --fmt-linkedin-soft: #12294a;
+  --fmt-linkedin-ink: #7db8f2;
+  --fmt-twitter: #9aa8ba;
+  --fmt-twitter-soft: #1f2938;
+  --fmt-twitter-ink: #c3cdda;
+  --fmt-advisory: #f29a3e;
+  --fmt-advisory-soft: #3a2410;
+  --fmt-advisory-ink: #f7b26b;
+  --fmt-infographic: #5bc46a;
+  --fmt-infographic-soft: #11301a;
+  --fmt-infographic-ink: #86d88f;
+  --fmt-executive_summary: #dcc254;
+  --fmt-executive_summary-soft: #302a0c;
+  --fmt-executive_summary-ink: #e8d27a;
+  --fmt-presentation: #ee6aae;
+  --fmt-presentation-soft: #3a1730;
+  --fmt-presentation-ink: #f590c3;
+
+  --elev-card: inset 0 1px 0 0 rgb(255 255 255 / 0.03), 0 1px 2px 0 rgb(0 0 0 / 0.45);
+  --elev-pop: 0 0 0 1px rgb(255 255 255 / 0.04), 0 18px 40px -8px rgb(0 0 0 / 0.6);
+  --elev-glow: 0 0 0 1px rgb(43 196 206 / 0.35), 0 0 24px -4px rgb(43 196 206 / 0.45);
+
+  --grid-line: rgb(148 178 214 / 0.055);
+  --canvas-glow: rgb(43 196 206 / 0.08);
+
+  color-scheme: dark;
+}
+
+/* Contextual format colour. <div data-fmt={artifact.output_type}> then bg-fmt-soft text-fmt-ink etc. */
+[data-fmt='video'] {
+  --fmt: var(--fmt-video);
+  --fmt-soft: var(--fmt-video-soft);
+  --fmt-ink: var(--fmt-video-ink);
+}
+[data-fmt='linkedin'] {
+  --fmt: var(--fmt-linkedin);
+  --fmt-soft: var(--fmt-linkedin-soft);
+  --fmt-ink: var(--fmt-linkedin-ink);
+}
+[data-fmt='twitter'] {
+  --fmt: var(--fmt-twitter);
+  --fmt-soft: var(--fmt-twitter-soft);
+  --fmt-ink: var(--fmt-twitter-ink);
+}
+[data-fmt='advisory'] {
+  --fmt: var(--fmt-advisory);
+  --fmt-soft: var(--fmt-advisory-soft);
+  --fmt-ink: var(--fmt-advisory-ink);
+}
+[data-fmt='infographic'] {
+  --fmt: var(--fmt-infographic);
+  --fmt-soft: var(--fmt-infographic-soft);
+  --fmt-ink: var(--fmt-infographic-ink);
+}
+[data-fmt='executive_summary'] {
+  --fmt: var(--fmt-executive_summary);
+  --fmt-soft: var(--fmt-executive_summary-soft);
+  --fmt-ink: var(--fmt-executive_summary-ink);
+}
+[data-fmt='presentation'] {
+  --fmt: var(--fmt-presentation);
+  --fmt-soft: var(--fmt-presentation-soft);
+  --fmt-ink: var(--fmt-presentation-ink);
+}
+
+/* ======================= Base ======================= */
+@layer base {
+  /* Borders default to the hairline token instead of currentColor. */
+  *,
+  ::before,
+  ::after,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    scrollbar-color: var(--line-strong) transparent;
+    /* Keep focused controls clear of the sticky header and the sticky Generate bar. */
+    scroll-padding-top: 5rem;
+    scroll-padding-bottom: 8rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-size: --theme(--text-sm);
+    line-height: --theme(--text-sm--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition:
+      background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Signature canvas: a faint survey grid, fixed behind content, fading out down the page, with a soft signal glow at the top. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(90% 55% at 50% -12%, var(--canvas-glow), transparent 70%),
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      32px 32px,
+      32px 32px;
+    background-position:
+      0 0,
+      -1px -1px,
+      -1px -1px;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 35%, rgb(0 0 0 / 0.35) 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 35%, rgb(0 0 0 / 0.35) 100%);
+  }
+
+  ::selection {
+    background-color: var(--selection);
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::placeholder {
+    color: var(--ink-subtle);
+    opacity: 1;
+  }
+
+  hr {
+    border-color: var(--line);
+  }
+
+  /* Scrollbars (WebKit fallback; Chromium/Firefox use scrollbar-color above). */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--line-strong);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ink-subtle);
+  }
+}
+
+/* ======================= Helpers ======================= */
+/* The survey grid without the fade, for preview stages (slide / infographic frames). */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+}
+
+/* Loading placeholder. Pair with a height and a radius: <div class="skeleton h-4 w-2/3 rounded-sm" /> */
+@utility skeleton {
+  background-color: var(--surface-2);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--surface-3) 85%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.8s linear infinite;
+}
+
+/* Smooth theme switch: add `theme-switching` to <html> for ~250ms around the .dark toggle. */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-switching,
+  .theme-switching *,
+  .theme-switching *::before,
+  .theme-switching *::after {
+    transition:
+      background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      fill 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      stroke 200ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+}
+
+/* ======================= Reduced motion ======================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

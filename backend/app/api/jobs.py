@@ -1,10 +1,10 @@
 import json
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from pydantic import ValidationError
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app import audit
 from app.config import get_settings
@@ -15,6 +15,7 @@ from app.llm import get_provider
 from app.models import Artifact, Job
 from app.schemas import (
     ArtifactOut,
+    ArtifactVerifyOut,
     AuditVerifyOut,
     GenerationParams,
     JobOut,
@@ -47,6 +48,24 @@ def _job_out(job: Job) -> JobOut:
             )
             for a in job.artifacts
         ],
+    )
+
+
+def _preview(text: str, n: int = 160) -> str:
+    """First `n` characters with runs of whitespace collapsed to one space."""
+    return " ".join(text[: n * 8].split())[:n]
+
+
+def _job_summary(job: Job) -> JobSummary:
+    return JobSummary(
+        id=job.id,
+        status=job.status,
+        source_name=job.source_name,
+        output_types=[a.output_type for a in job.artifacts],
+        created_at=job.created_at,
+        source_kind=job.source_kind,
+        source_preview=_preview(job.source_text),
+        artifact_statuses={a.output_type: a.status for a in job.artifacts},
     )
 
 
@@ -119,18 +138,18 @@ async def create_job(
 
 
 @router.get("/jobs", response_model=list[JobSummary])
-def list_jobs(limit: int = 20, db: Session = Depends(get_db)) -> list[JobSummary]:
-    jobs = db.scalars(select(Job).order_by(Job.id.desc()).limit(min(limit, 100)))
-    return [
-        JobSummary(
-            id=j.id,
-            status=j.status,
-            source_name=j.source_name,
-            output_types=[a.output_type for a in j.artifacts],
-            created_at=j.created_at,
-        )
-        for j in jobs
-    ]
+def list_jobs(
+    limit: int = 20, offset: int = Query(0, ge=0), db: Session = Depends(get_db)
+) -> list[JobSummary]:
+    """Newest first. Page with `offset`; `limit` is capped at 100."""
+    query = (
+        select(Job)
+        .options(selectinload(Job.artifacts))
+        .order_by(Job.id.desc())
+        .offset(offset)
+        .limit(max(0, min(limit, 100)))
+    )
+    return [_job_summary(j) for j in db.scalars(query)]
 
 
 @router.get("/jobs/{job_id}", response_model=JobOut)
@@ -145,6 +164,35 @@ def get_job(job_id: int, db: Session = Depends(get_db)) -> JobOut:
 def verify_audit(db: Session = Depends(get_db)) -> AuditVerifyOut:
     valid, entries, broken_at = audit.verify(db)
     return AuditVerifyOut(valid=valid, entries=entries, broken_at=broken_at)
+
+
+@router.get("/artifacts/{artifact_id}/verify", response_model=ArtifactVerifyOut)
+def verify_artifact(artifact_id: int, db: Session = Depends(get_db)) -> ArtifactVerifyOut:
+    """Check one artefact against its stored hash, its audit event and the audit chain."""
+    artifact = db.get(Artifact, artifact_id)
+    if artifact is None:
+        raise HTTPException(404, "Artifact not found")
+    if artifact.status != "done":
+        raise HTTPException(409, "Artifact is not ready")
+    recomputed = (
+        audit.sha256(audit.canonical(artifact.content)) if artifact.content is not None else None
+    )
+    hash_matches = recomputed is not None and recomputed == artifact.content_hash
+    event = audit.artifact_event(db, artifact.job_id, artifact.id)
+    recorded = event is not None and event.payload.get("content_hash") == artifact.content_hash
+    chain_valid, entries, _ = audit.verify(db)
+    return ArtifactVerifyOut(
+        artifact_id=artifact.id,
+        content_hash=artifact.content_hash,
+        recomputed_hash=recomputed,
+        hash_matches=hash_matches,
+        audit_event_id=event.id if event else None,
+        audit_event_hash=event.hash if event else None,
+        audit_recorded=recorded,
+        chain_valid=chain_valid,
+        chain_entries=entries,
+        verified=hash_matches and recorded and chain_valid,
+    )
 
 
 @router.get("/artifacts/{artifact_id}/download")

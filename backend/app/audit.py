@@ -43,6 +43,20 @@ def record(db: Session, action: str, payload: dict[str, Any], actor: str = "anon
     return event
 
 
+def artifact_event(db: Session, job_id: int, artifact_id: int) -> AuditEvent | None:
+    """The latest "artifact.generated" event recorded for this artefact, if any."""
+    return db.scalar(
+        select(AuditEvent)
+        .where(
+            AuditEvent.action == "artifact.generated",
+            AuditEvent.payload["artifact_id"].as_integer() == artifact_id,
+            AuditEvent.payload["job_id"].as_integer() == job_id,
+        )
+        .order_by(AuditEvent.id.desc())
+        .limit(1)
+    )
+
+
 def verify(db: Session) -> tuple[bool, int, int | None]:
     prev = GENESIS
     count = 0
