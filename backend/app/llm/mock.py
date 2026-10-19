@@ -10,6 +10,12 @@ class MockProvider:
     def generate_json(self, system: str, user: str, schema: dict[str, Any]) -> dict[str, Any]:
         return _fill(schema, schema.get("$defs", {}), "")
 
+    def describe_image(self, data: bytes, mime: str) -> str:
+        return f"[mock image description: {mime}, {len(data)} bytes]"
+
+    def transcribe(self, data: bytes, filename: str) -> str:
+        return f"[mock transcript of {filename}]"
+
 
 def _fill(schema: dict[str, Any], defs: dict[str, Any], key: str) -> Any:
     if "$ref" in schema:

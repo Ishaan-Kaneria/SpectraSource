@@ -1,6 +1,7 @@
 import json
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,6 +11,7 @@ from app.config import get_settings
 from app.exporters import EXPORTS, MEDIA, render
 from app.db import get_db
 from app.ingest import UnsupportedSource, extract
+from app.llm import get_provider
 from app.models import Artifact, Job
 from app.schemas import (
     ArtifactOut,
@@ -79,7 +81,7 @@ async def create_job(
         if len(data) > settings.max_upload_mb * 1024 * 1024:
             raise HTTPException(413, f"File larger than {settings.max_upload_mb} MB")
         try:
-            src = extract(file.filename, data)
+            src = await run_in_threadpool(extract, file.filename, data, get_provider())
         except UnsupportedSource as e:
             raise HTTPException(415, str(e)) from e
         kind, name = src.kind, src.name

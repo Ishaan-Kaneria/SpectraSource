@@ -74,6 +74,8 @@ Set these in `.env` (never commit it):
 
 Put the key in `LLM_API_KEY` (leave it empty for Ollama).
 
+**Images** are read by a vision model (`LLM_VISION_MODEL`, defaults to `LLM_MODEL`), which transcribes text and describes charts. **Video and audio** go to a Whisper-style transcription endpoint (`TRANSCRIBE_*`; OpenAI `whisper-1` or Groq `whisper-large-v3`). The transcript or description becomes the source for generation.
+
 ## Tests
 
 ```bash
@@ -101,7 +103,7 @@ CI runs both on every push and pull request.
 
 ## Roadmap
 
-- Image input (OCR + vision captioning) and video/audio input (Whisper transcription)
+- Keyframe captions for silent video; local Whisper for fully offline transcription
 - RAG over long sources with pgvector so outputs cite source passages
 - PDF export and image rendering for infographics
 - Login with role-based access and a human approval step before publishing

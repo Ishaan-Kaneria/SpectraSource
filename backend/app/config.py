@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
     llm_timeout_seconds: float = 120.0
+    # Image input: model that accepts images. Empty means use LLM_MODEL.
+    llm_vision_model: str = ""
+    # Video/audio input: any OpenAI-compatible /audio/transcriptions endpoint (OpenAI, Groq).
+    # Empty base URL or key means reuse the LLM ones.
+    transcribe_base_url: str = ""
+    transcribe_api_key: str = ""
+    transcribe_model: str = "whisper-1"
 
     max_upload_mb: int = 25
     max_source_chars: int = 60_000

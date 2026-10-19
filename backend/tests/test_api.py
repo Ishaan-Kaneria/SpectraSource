@@ -52,8 +52,20 @@ def test_rejects_bad_input(client):
     assert _create(client, [], data={"text": SOURCE}).status_code == 422
     assert _create(client, ["nope"], data={"text": SOURCE}).status_code == 422
     assert _create(client, ["linkedin"]).status_code == 422
-    r = _create(client, ["linkedin"], files={"file": ("x.png", b"\x89PNG", "image/png")})
+    r = _create(client, ["linkedin"], files={"file": ("x.exe", b"MZ", "application/octet-stream")})
     assert r.status_code == 415
+
+
+def test_image_and_video_inputs(client):
+    r = _create(client, ["linkedin"], files={"file": ("poster.png", b"\x89PNG", "image/png")})
+    assert r.status_code == 202, r.text
+    assert r.json()["source_kind"] == "image"
+    assert "mock image description" in r.json()["source_preview"]
+
+    r = _create(client, ["twitter"], files={"file": ("brief.mp4", b"\x00\x00", "video/mp4")})
+    assert r.status_code == 202, r.text
+    assert r.json()["source_kind"] == "video"
+    assert "mock transcript of brief.mp4" in r.json()["source_preview"]
 
 
 def test_audit_chain_detects_tampering(client):

@@ -1,5 +1,8 @@
 import io
+import mimetypes
 from dataclasses import dataclass
+
+from app.llm import LLMError, LLMProvider
 
 
 class UnsupportedSource(ValueError):
@@ -18,7 +21,8 @@ IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".mp3", ".wav", ".m4a"}
 
 
-def extract(filename: str, data: bytes) -> ExtractedSource:
+def extract(filename: str, data: bytes, provider: LLMProvider) -> ExtractedSource:
+    """Blocking: image and video extraction call the model, so run it in a thread."""
     ext = ("." + filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
     if ext == ".pdf":
         return ExtractedSource("pdf", filename, _pdf(data))
@@ -27,11 +31,20 @@ def extract(filename: str, data: bytes) -> ExtractedSource:
     if ext in TEXT_EXT:
         return ExtractedSource("text", filename, data.decode("utf-8", errors="replace"))
     if ext in IMAGE_EXT:
-        # TODO: OCR (Tesseract) + vision captioning so screenshots and posters become text.
-        raise UnsupportedSource("Image input is not wired up yet (planned: OCR + vision captioning).")
+        mime = mimetypes.guess_type(filename)[0] or "image/png"
+        try:
+            text = provider.describe_image(data, mime)
+        except LLMError as e:
+            raise UnsupportedSource(f"Could not read the image: {e}") from e
+        return ExtractedSource("image", filename, f"[Image content extracted by vision model]\n{text}")
     if ext in VIDEO_EXT:
-        # TODO: speech-to-text (Whisper) + keyframe captions.
-        raise UnsupportedSource("Video/audio input is not wired up yet (planned: Whisper transcription).")
+        # Whisper-style APIs accept mp4/webm/mp3/wav directly; keyframe captions can be added later.
+        try:
+            text = provider.transcribe(data, filename)
+        except LLMError as e:
+            raise UnsupportedSource(f"Could not transcribe the video/audio: {e}") from e
+        kind = "audio" if ext in {".mp3", ".wav", ".m4a"} else "video"
+        return ExtractedSource(kind, filename, f"[Transcript of {kind} narration]\n{text}")
     raise UnsupportedSource(f"Unsupported file type: {ext or filename}")
 
 

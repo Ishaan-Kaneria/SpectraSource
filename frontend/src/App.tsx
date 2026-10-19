@@ -88,11 +88,11 @@ export default function App() {
             />
             <input
               type="file"
-              accept=".pdf,.docx,.txt,.md,.html"
+              accept=".pdf,.docx,.txt,.md,.html,.png,.jpg,.jpeg,.webp,.mp4,.mov,.webm,.mp3,.wav,.m4a"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="mt-2 block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5"
             />
-            <p className="mt-1 text-xs text-slate-500">PDF, DOCX or text. Image and video input are coming next.</p>
+            <p className="mt-1 text-xs text-slate-500">PDF, DOCX, text, images (read by a vision model) or video/audio (transcribed).</p>
           </div>
 
           <div>
