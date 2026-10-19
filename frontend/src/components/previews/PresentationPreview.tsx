@@ -70,7 +70,7 @@ export function PresentationPreview({ value }: { value: Presentation }) {
         <NavButton side="right" disabled={i === pages.length - 1} onClick={() => go(i + 1)} />
       </div>
 
-      <div ref={strip} className="relative flex gap-2 overflow-x-auto p-0.5 pb-1" aria-label="Slide thumbnails" role="group">
+      <div ref={strip} tabIndex={0} className="relative flex gap-2 overflow-x-auto rounded-lg p-0.5 pb-1" aria-label="Slide thumbnails" role="group">
         {pages.map((p, n) => (
           <button
             key={n}

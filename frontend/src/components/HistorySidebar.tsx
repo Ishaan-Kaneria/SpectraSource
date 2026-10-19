@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { FileText, Plus, RefreshCw, X } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { FORMAT_STYLE } from '../lib/formats'
 import { timeAgo } from '../lib/time'
 import { labelFor, type JobSummary } from '../types'
@@ -11,7 +11,7 @@ type Props = {
   jobs: JobSummary[] | null
   error: string | null
   activeId: number | null
-  onSelect: (id: number) => void
+  onSelect: (id: number, moveFocus?: boolean) => void
   onNew: () => void
   onRefresh: () => void
 }
@@ -101,7 +101,7 @@ function HistoryList({ jobs, error, activeId, onSelect, onNew, onRefresh, onClos
   )
 }
 
-export function HistorySidebar(props: Props & { open: boolean; onClose: () => void }) {
+export const HistorySidebar = memo(function HistorySidebar(props: Props & { open: boolean; onClose: () => void }) {
   const { open, onClose, onSelect, onNew } = props
   const panel = useRef<HTMLDivElement>(null)
 
@@ -138,7 +138,7 @@ export function HistorySidebar(props: Props & { open: boolean; onClose: () => vo
   }, [open, onClose])
 
   const pick = (id: number) => {
-    onSelect(id)
+    onSelect(id, true)
     onClose()
   }
   const fresh = () => {
@@ -182,4 +182,4 @@ export function HistorySidebar(props: Props & { open: boolean; onClose: () => vo
       </AnimatePresence>
     </>
   )
-}
+})

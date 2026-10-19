@@ -37,7 +37,13 @@ export function FormatPicker({ selected, onChange }: { selected: OutputType[]; o
                 on ? 'border-brand bg-brand-soft shadow-sm' : 'border-line bg-surface hover:border-line-strong hover:bg-surface-2',
               )}
             >
-              <input type="checkbox" className="sr-only" checked={on} onChange={() => toggle(o.id)} />
+              {/* Covers the whole tile so the browser scrolls all of it into view on focus. */}
+              <input
+                type="checkbox"
+                className="absolute inset-0 size-full cursor-pointer appearance-none rounded-xl opacity-0"
+                checked={on}
+                onChange={() => toggle(o.id)}
+              />
               <span className={cx('grid size-9 shrink-0 place-items-center rounded-lg', S.chip)}>
                 <S.icon className="size-5" aria-hidden />
               </span>

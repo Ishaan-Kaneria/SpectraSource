@@ -26,7 +26,7 @@ export function Header({
 }) {
   const ThemeIcon = dark ? Sun : Moon
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-line bg-surface">
       <div className="mx-auto flex h-16 max-w-[1680px] items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:px-6">
         <button
           type="button"

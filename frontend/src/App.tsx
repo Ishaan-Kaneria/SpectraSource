@@ -90,14 +90,15 @@ export default function App() {
     }
   }, [jobId, jobDone, refreshHistory])
 
-  // Bring the output pack into view, clear of the sticky header, and move focus to it.
-  const showResults = () =>
+  // Bring the output pack into view, clear of the sticky header, and optionally move focus to it.
+  const showResults = (moveFocus = true) =>
     setTimeout(() => {
       const el = results.current
       if (!el) return
       window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 80) })
-      el.querySelector<HTMLElement>('[data-results-heading]')?.focus({ preventScroll: true })
+      if (moveFocus) el.querySelector<HTMLElement>('[data-results-heading]')?.focus({ preventScroll: true })
     }, 60)
+  const [announce, setAnnounce] = useState('')
 
   const inFlight = useRef(false)
   async function submit(e: React.FormEvent) {
@@ -123,7 +124,8 @@ export default function App() {
 
   // Ignore a slow response for a job the user has already clicked away from.
   const openRequest = useRef(0)
-  const openJob = useCallback((id: number) => {
+  // From the phone drawer, focus follows the pack; from the desktop list it stays on the row.
+  const openJob = useCallback((id: number, moveFocus = false) => {
     const req = ++openRequest.current
     setLoadingJob(true)
     setPanelError(null)
@@ -133,17 +135,18 @@ export default function App() {
         setJob(j)
         setSelected(j.artifacts.map((a) => a.output_type))
         setParams({ ...DEFAULT_PARAMS, ...j.params })
-        showResults()
+        setAnnounce(`Opened pack #${j.id}, ${j.artifacts.length} formats`)
+        showResults(moveFocus)
       })
       .catch((e) => {
         if (req !== openRequest.current) return
         setPanelError(`Couldn't open job #${id}: ${msg(e)}`)
-        showResults()
+        showResults(moveFocus)
       })
       .finally(() => req === openRequest.current && setLoadingJob(false))
   }, [])
 
-  const newJob = () => {
+  const newJob = useCallback(() => {
     openRequest.current++
     setJob(null)
     setText('')
@@ -155,6 +158,14 @@ export default function App() {
     setLoadingJob(false)
     window.scrollTo({ top: 0 })
     requestAnimationFrame(() => document.getElementById('source-text')?.focus({ preventScroll: true }))
+  }, [])
+
+  // Enter on a format tile or detail option shouldn't submit the whole form; let it toggle the tile instead.
+  const onFormKey = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    const t = e.target as HTMLInputElement
+    if (e.key !== 'Enter' || t.tagName !== 'INPUT' || (t.type !== 'checkbox' && t.type !== 'radio')) return
+    e.preventDefault()
+    if (t.type === 'checkbox') t.click()
   }
 
   const hasSource = Boolean(text.trim() || file)
@@ -199,7 +210,7 @@ export default function App() {
         />
         <main className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] items-start gap-5 p-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:p-6 2xl:grid-cols-[26rem_minmax(0,1fr)]">
           <h1 className="sr-only">SpectraSource: turn one source into every format</h1>
-          <form id="composer" onSubmit={submit} tabIndex={-1} className="min-w-0 focus:outline-none" aria-label="Create an output pack">
+          <form id="composer" onSubmit={submit} onKeyDown={onFormKey} tabIndex={-1} className="min-w-0 focus:outline-none" aria-label="Create an output pack">
             <Card className="space-y-6 p-4 sm:p-5">
               <SourceInput text={text} onText={setText} file={file} onFile={setFile} />
               <FormatPicker selected={selected} onChange={setSelected} />
@@ -232,9 +243,16 @@ export default function App() {
                 <p id="submit-why" className="mt-2 text-center text-xs text-ink-muted">
                   {server.state === 'down'
                     ? 'The server is offline. Use retry at the top.'
-                    : jobRunning
-                      ? 'You can start another pack when this one finishes.'
-                      : (why ?? 'Each format takes a few seconds.')}
+                    : jobRunning ? (
+                      <>
+                        This pack keeps running in history.{' '}
+                        <button type="button" onClick={newJob} className="font-medium text-brand-ink underline underline-offset-2">
+                          Start a new pack
+                        </button>
+                      </>
+                    ) : (
+                      (why ?? 'Each format takes a few seconds.')
+                    )}
                 </p>
               </div>
             </Card>
@@ -248,6 +266,9 @@ export default function App() {
               </p>
             )}
             <ResultsPanel job={job} loading={loadingJob} onNew={newJob} />
+            <p className="sr-only" aria-live="polite">
+              {announce}
+            </p>
           </div>
         </main>
       </div>

@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Braces, Check, ChevronDown, CircleAlert, Copy, Download, Eye, FileText, Fingerprint, Layers } from 'lucide-react'
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { memo, useRef, useState, type KeyboardEvent } from 'react'
 import { downloadUrl } from '../api'
 import { FORMAT_STYLE } from '../lib/formats'
 import { toPlainText } from '../lib/plaintext'
@@ -23,10 +23,10 @@ const EXPORT_LABEL: Record<string, string> = {
 
 const INTERRUPTED = 'Generation was interrupted before this format finished. Start a new pack to try again.'
 
-export function ResultsPanel({ job, loading, onNew }: { job: Job | null; loading: boolean; onNew: () => void }) {
+export const ResultsPanel = memo(function ResultsPanel({ job, loading, onNew }: { job: Job | null; loading: boolean; onNew: () => void }) {
   if (!job) return loading ? <LoadingCard /> : <EmptyState />
   return <JobResults key={job.id} job={job} onNew={onNew} />
-}
+})
 
 function JobResults({ job, onNew }: { job: Job; onNew: () => void }) {
   const [activeId, setActiveId] = useState<number>(job.artifacts[0]?.id)
