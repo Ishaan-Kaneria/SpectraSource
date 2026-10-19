@@ -64,17 +64,24 @@ API docs are at http://localhost:8000/docs.
 
 ## Using a real LLM
 
-Set these in `.env` (never commit it):
+The demo uses **Google Gemini**: one free key covers text, images and video. Get a key at https://aistudio.google.com/apikey, then set in `.env` (never commit it):
+
+```bash
+LLM_PROVIDER=gemini
+LLM_API_KEY=your-key-here
+```
+
+That's all. The model defaults to `gemini-flash-latest`; pin another with `LLM_MODEL`. Images are read by the vision model, and video/audio (up to 20 MB) is sent to Gemini directly, which transcribes speech and notes on-screen text.
+
+Other providers work through the OpenAI-compatible connector:
 
 | Provider | LLM_PROVIDER | LLM_BASE_URL | LLM_MODEL |
 |---|---|---|---|
-| OpenAI | openai_compatible | https://api.openai.com/v1 | gpt-4o-mini |
+| OpenAI | openai_compatible | (default) | (default gpt-4o-mini) |
 | Groq | openai_compatible | https://api.groq.com/openai/v1 | llama-3.3-70b-versatile |
 | Local Ollama (no data leaves the machine) | openai_compatible | http://localhost:11434/v1 | llama3.1:8b |
 
-Put the key in `LLM_API_KEY` (leave it empty for Ollama).
-
-**Images** are read by a vision model (`LLM_VISION_MODEL`, defaults to `LLM_MODEL`), which transcribes text and describes charts. **Video and audio** go to a Whisper-style transcription endpoint (`TRANSCRIBE_*`; OpenAI `whisper-1` or Groq `whisper-large-v3`). The transcript or description becomes the source for generation.
+With these, video and audio go to a Whisper-style endpoint (`TRANSCRIBE_*`; OpenAI `whisper-1` or Groq `whisper-large-v3`).
 
 ## Tests
 

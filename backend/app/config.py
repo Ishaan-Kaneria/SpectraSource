@@ -10,11 +10,12 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
 
     # "mock" needs no key and returns canned output, so the app runs end to end offline.
+    # "gemini" uses Google Gemini for text, images and video with one key.
     # "openai_compatible" works with OpenAI, Groq, Together, vLLM and Ollama (http://localhost:11434/v1).
     llm_provider: str = "mock"
-    llm_base_url: str = "https://api.openai.com/v1"
+    llm_base_url: str = ""  # empty = the provider's default
     llm_api_key: str = ""
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = ""  # empty = the provider's default
     llm_timeout_seconds: float = 120.0
     # Image input: model that accepts images. Empty means use LLM_MODEL.
     llm_vision_model: str = ""
