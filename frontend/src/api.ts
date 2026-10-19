@@ -1,4 +1,4 @@
-import type { GenerationParams, Job, OutputType } from './types'
+import type { ArtifactVerify, AuditVerify, GenerationParams, Job, JobSummary, OutputType } from './types'
 
 export const API_BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 const BASE = API_BASE
@@ -59,3 +59,15 @@ export async function getJob(id: number): Promise<Job> {
 
 export const downloadUrl = (artifactId: number, fmt: string) =>
   `${BASE}/api/artifacts/${artifactId}/download?fmt=${encodeURIComponent(fmt)}`
+
+export async function listJobs(limit = 30): Promise<JobSummary[]> {
+  return handle(await call(`${BASE}/api/jobs?limit=${limit}`, undefined, 30_000))
+}
+
+export async function verifyAudit(): Promise<AuditVerify> {
+  return handle(await call(`${BASE}/api/audit/verify`, undefined, 30_000))
+}
+
+export async function verifyArtifact(id: number): Promise<ArtifactVerify> {
+  return handle(await call(`${BASE}/api/artifacts/${id}/verify`, undefined, 30_000))
+}

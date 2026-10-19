@@ -14,10 +14,12 @@ class Settings(BaseSettings):
     # Extra origins matched by regex, e.g. Netlify deploy previews.
     cors_origin_regex: str = ""
 
-    # "mock" needs no key and returns canned output, so the app runs end to end offline.
+    # "mock" needs no key and writes sample output from the source, so the app runs end to end offline.
     # "gemini" uses Google Gemini for text, images and video with one key.
     # "openai_compatible" works with OpenAI, Groq, Together, vLLM and Ollama (http://localhost:11434/v1).
     llm_provider: str = "mock"
+    # Mock only: pause this long per deliverable so the UI's live progress is visible in demos.
+    mock_delay_seconds: float = 0.0
     llm_base_url: str = ""  # empty = the provider's default
     llm_api_key: str = ""
     llm_model: str = ""  # empty = the provider's default
@@ -38,6 +40,11 @@ class Settings(BaseSettings):
     def _empty_database_url(cls, v: str | None) -> str:
         # `DATABASE_URL=` with nothing after it means "use the default".
         return v or "sqlite:///./spectra.db"
+
+    @field_validator("mock_delay_seconds", mode="before")
+    @classmethod
+    def _empty_delay(cls, v: str | float | None) -> str | float:
+        return v or 0.0
 
     @property
     def cors_origin_list(self) -> list[str]:
