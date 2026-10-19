@@ -1,8 +1,11 @@
 import io
+import logging
 import mimetypes
 from dataclasses import dataclass
 
 from app.llm import LLMError, LLMProvider
+
+log = logging.getLogger(__name__)
 
 
 class UnsupportedSource(ValueError):
@@ -20,14 +23,22 @@ TEXT_EXT = {".txt", ".md", ".csv", ".json", ".html", ".htm", ".log"}
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".mp3", ".wav", ".m4a"}
 
+_UNREADABLE = {
+    "pdf": "Couldn't read this PDF. It may be damaged or password-protected.",
+    "docx": "Couldn't read this Word document. It may be damaged, password-protected or not a real .docx file.",
+}
+_NO_TEXT = {
+    "pdf": "This PDF has no text that can be extracted; it may be a scanned image. "
+    "Paste the text, or upload the pages as images instead.",
+    "docx": "This Word document has no text to work from. Paste the text instead.",
+}
+
 
 def extract(filename: str, data: bytes, provider: LLMProvider) -> ExtractedSource:
     """Blocking: image and video extraction call the model, so run it in a thread."""
     ext = ("." + filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
-    if ext == ".pdf":
-        return ExtractedSource("pdf", filename, _pdf(data))
-    if ext == ".docx":
-        return ExtractedSource("docx", filename, _docx(data))
+    if ext in (".pdf", ".docx"):
+        return _document(ext[1:], filename, data)
     if ext in TEXT_EXT:
         return ExtractedSource("text", filename, data.decode("utf-8", errors="replace"))
     if ext in IMAGE_EXT:
@@ -46,6 +57,19 @@ def extract(filename: str, data: bytes, provider: LLMProvider) -> ExtractedSourc
         kind = "audio" if ext in {".mp3", ".wav", ".m4a"} else "video"
         return ExtractedSource(kind, filename, f"[Transcript of {kind} narration]\n{text}")
     raise UnsupportedSource(f"Unsupported file type: {ext or filename}")
+
+
+def _document(kind: str, filename: str, data: bytes) -> ExtractedSource:
+    """PDF or DOCX text. Damaged, encrypted or text-less files become UnsupportedSource
+    (a clear 415) instead of an unhandled 500."""
+    try:
+        text = _pdf(data) if kind == "pdf" else _docx(data)
+    except Exception as e:  # pypdf and python-docx raise many unrelated types on bad input
+        log.info("could not read %s %r: %s: %s", kind, filename, type(e).__name__, e)
+        raise UnsupportedSource(_UNREADABLE[kind]) from e
+    if not text.strip():
+        raise UnsupportedSource(_NO_TEXT[kind])
+    return ExtractedSource(kind, filename, text)
 
 
 def _pdf(data: bytes) -> str:

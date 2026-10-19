@@ -1,30 +1,44 @@
-import { AnimatePresence, motion } from 'motion/react'
-import { Braces, Check, CircleAlert, Copy, Download, Eye, FileText, Fingerprint, Layers } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { Braces, Check, ChevronDown, CircleAlert, Copy, Download, Eye, FileText, Fingerprint, Layers } from 'lucide-react'
 import { useRef, useState, type KeyboardEvent } from 'react'
 import { downloadUrl } from '../api'
 import { FORMAT_STYLE } from '../lib/formats'
 import { toPlainText } from '../lib/plaintext'
 import { timeAgo } from '../lib/time'
-import { OUTPUT_TYPES, labelFor, type Artifact, type Job } from '../types'
+import { OUTPUT_TYPES, labelFor, shortLabelFor, type Artifact, type Job } from '../types'
 import { ArtifactBadge } from './AuditBadge'
 import { BrandMark } from './Brand'
+import { Popover } from './Popover'
 import { Preview } from './previews'
 import { Button, Card, Spinner } from './ui'
 import { STATUS_LABEL, cx } from '../lib/cx'
 
-const EXPORT_LABEL: Record<string, string> = { pptx: 'PowerPoint', docx: 'Word', srt: 'Subtitles', html: 'HTML', md: 'Markdown' }
-
-export function ResultsPanel({ job, loading }: { job: Job | null; loading: boolean }) {
-  if (!job) return loading ? <LoadingCard /> : <EmptyState />
-  return <JobResults key={job.id} job={job} />
+const EXPORT_LABEL: Record<string, string> = {
+  pptx: 'PowerPoint deck',
+  docx: 'Word document',
+  srt: 'Subtitles (SRT)',
+  html: 'Web page (HTML)',
+  md: 'Markdown',
 }
 
-function JobResults({ job }: { job: Job }) {
+const INTERRUPTED = 'Generation was interrupted before this format finished. Start a new pack to try again.'
+
+export function ResultsPanel({ job, loading, onNew }: { job: Job | null; loading: boolean; onNew: () => void }) {
+  if (!job) return loading ? <LoadingCard /> : <EmptyState />
+  return <JobResults key={job.id} job={job} onNew={onNew} />
+}
+
+function JobResults({ job, onNew }: { job: Job; onNew: () => void }) {
   const [activeId, setActiveId] = useState<number>(job.artifacts[0]?.id)
   const [picked, setPicked] = useState(false)
   const tabs = useRef<HTMLDivElement>(null)
 
-  const arts = job.artifacts
+  // A finished job can't make progress, so anything still open was cut off (e.g. a server restart).
+  const jobFinished = job.status === 'done' || job.status === 'failed'
+  const arts = jobFinished
+    ? job.artifacts.map((a) => (a.status === 'pending' || a.status === 'running' ? { ...a, status: 'failed' as const, error: INTERRUPTED } : a))
+    : job.artifacts
+  const interrupted = jobFinished && job.artifacts.some((a) => a.status === 'pending' || a.status === 'running')
   const done = arts.filter((a) => a.status === 'done').length
   const finished = arts.filter((a) => a.status === 'done' || a.status === 'failed').length
   const chosen = arts.find((a) => a.id === activeId) ?? arts[0]
@@ -49,11 +63,11 @@ function JobResults({ job }: { job: Job }) {
   const running = finished < arts.length
 
   return (
-    <Card className="min-w-0 overflow-hidden">
+    <Card className="min-w-0">
       <div className="border-b border-line px-4 pt-4 sm:px-5">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <div className="min-w-0">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <h2 data-results-heading tabIndex={-1} className="flex items-center gap-2 rounded text-sm font-semibold text-ink">
               <Layers className="size-4 text-brand-ink" aria-hidden /> Output pack
               <span className="font-mono text-xs font-normal text-ink-muted">#{job.id}</span>
             </h2>
@@ -67,22 +81,38 @@ function JobResults({ job }: { job: Job }) {
                 <Spinner className="size-3.5" /> {done} of {arts.length} ready
               </span>
             ) : (
-              <span className={done === arts.length ? 'text-ok-ink' : 'text-ink-muted'}>
+              <span className={done === arts.length ? 'text-ok-ink' : 'text-warn-ink'}>
                 {done} of {arts.length} ready{arts.length - done > 0 ? `, ${arts.length - done} failed` : ''}
               </span>
             )}
           </p>
         </div>
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-3" aria-hidden>
+        {interrupted && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-xs text-warn-ink">
+            <span>This pack stopped before every format finished.</span>
+            <Button size="sm" onClick={onNew}>
+              Start a new pack
+            </Button>
+          </div>
+        )}
+        <div className="relative mt-3 h-1 overflow-hidden rounded-full bg-surface-3" aria-hidden>
           <motion.div
             className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-brand),var(--color-accent))]"
             initial={{ width: 0 }}
             animate={{ width: `${(finished / Math.max(arts.length, 1)) * 100}%` }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           />
+          {running && <span className="absolute inset-y-0 left-0 w-1/3 animate-scan bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.6),transparent)] motion-reduce:hidden" />}
         </div>
 
-        <div ref={tabs} role="tablist" aria-label="Generated formats" onKeyDown={onKey} className="-mx-1 mt-2 flex gap-x-1 overflow-x-auto px-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
+        <div
+          ref={tabs}
+          role="tablist"
+          aria-label="Generated formats"
+          onKeyDown={onKey}
+          className="-mx-1 mt-3 grid gap-1 px-1 pb-2"
+          style={{ gridTemplateColumns: `repeat(${arts.length}, minmax(0, 1fr))` }}
+        >
           {arts.map((a) => {
             const S = FORMAT_STYLE[a.output_type]
             const sel = a.id === active?.id
@@ -95,18 +125,25 @@ function JobResults({ job }: { job: Job }) {
                 id={`tab-${a.id}`}
                 aria-selected={sel}
                 aria-controls="artifact-panel"
+                aria-label={`${labelFor(a.output_type)}, ${STATUS_LABEL[a.status]}`}
+                title={labelFor(a.output_type)}
                 tabIndex={sel ? 0 : -1}
                 onClick={() => select(a.id)}
                 className={cx(
-                  'relative flex shrink-0 items-center gap-2 rounded-t-lg px-3 pt-2.5 pb-3 text-sm transition-colors',
-                  sel ? 'font-semibold text-ink' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
+                  'relative flex min-w-0 flex-col items-center gap-1 rounded-lg border px-1 pt-2.5 pb-2 transition-colors',
+                  sel ? 'border-brand/60 bg-brand-soft' : 'border-transparent hover:bg-surface-2',
                 )}
               >
-                <S.icon className={cx('size-4', S.text)} aria-hidden />
-                <span className="whitespace-nowrap">{labelFor(a.output_type)}</span>
-                <TabStatus status={a.status} />
-                <span className="sr-only">, {STATUS_LABEL[a.status]}</span>
-                {sel && <motion.span layoutId="tab-underline" className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-brand" />}
+                <span className={cx('grid size-8 place-items-center rounded-lg', S.chip)}>
+                  <S.icon className="size-[18px]" aria-hidden />
+                </span>
+                <span className={cx('hidden w-full truncate text-center text-xs sm:block', sel ? 'font-semibold text-ink' : 'text-ink-muted')}>
+                  {shortLabelFor(a.output_type)}
+                </span>
+                <span className="absolute top-1 right-1">
+                  <TabStatus status={a.status} />
+                </span>
+                {sel && <motion.span layoutId="tab-underline" className={cx('absolute inset-x-3 -bottom-px h-0.5 rounded-full', S.bar)} />}
               </button>
             )
           })}
@@ -131,10 +168,15 @@ function JobResults({ job }: { job: Job }) {
 }
 
 function TabStatus({ status }: { status: Artifact['status'] }) {
-  if (status === 'done') return <Check className="size-3.5 text-ok" strokeWidth={3} aria-hidden />
-  if (status === 'failed') return <CircleAlert className="size-3.5 text-bad" aria-hidden />
-  if (status === 'running') return <Spinner className="size-3.5 text-warn" />
-  return <span aria-hidden className="size-2 rounded-full border border-ink-subtle" />
+  if (status === 'done')
+    return (
+      <span className="grid size-4 place-items-center rounded-full bg-ok text-white" aria-hidden>
+        <Check className="size-2.5" strokeWidth={3.5} />
+      </span>
+    )
+  if (status === 'failed') return <CircleAlert className="size-4 text-bad" aria-hidden />
+  if (status === 'running') return <Spinner className="size-4 text-warn" />
+  return <span aria-hidden className="block size-3 rounded-full border-2 border-ink-subtle/60" />
 }
 
 function ArtifactBody({ artifact, job }: { artifact: Artifact; job: Job }) {
@@ -166,34 +208,29 @@ function ArtifactBody({ artifact, job }: { artifact: Artifact; job: Job }) {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <ArtifactBadge key={artifact.id} artifactId={artifact.id} fallbackHash={artifact.content_hash} />
-        <div className="ml-auto flex flex-wrap items-center gap-1.5">
-          {artifact.export_formats
-            .filter((f) => f !== 'json')
-            .map((f) => (
-              <a
-                key={f}
-                href={downloadUrl(artifact.id, f)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 text-xs font-medium text-ink hover:bg-surface-2"
-                aria-label={`Download as ${EXPORT_LABEL[f] ?? f.toUpperCase()} (.${f})`}
-              >
-                <Download className="size-3.5 text-ink-muted" aria-hidden />
-                <span className="uppercase">{f}</span>
-              </a>
-            ))}
-          <Button size="sm" onClick={copy} aria-live="polite">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <h3 className="truncate text-base font-semibold text-ink">{labelFor(artifact.output_type)}</h3>
+          <ArtifactBadge key={artifact.id} artifactId={artifact.id} fallbackHash={artifact.content_hash} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <DownloadMenu artifact={artifact} />
+          <Button size="sm" onClick={copy}>
             {copied ? <Check className="size-3.5 text-ok" /> : <Copy className="size-3.5 text-ink-muted" />}
-            {copied ? 'Copied' : 'Copy text'}
+            <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setRaw((r) => !r)} aria-pressed={raw}>
+          <Button size="sm" variant="ghost" onClick={() => setRaw((r) => !r)} aria-pressed={raw} aria-label="Show raw JSON">
             {raw ? <Eye className="size-3.5" /> : <Braces className="size-3.5" />}
-            {raw ? 'Preview' : 'JSON'}
+            <span className="hidden sm:inline">{raw ? 'Preview' : 'JSON'}</span>
           </Button>
         </div>
       </div>
       {raw ? (
-        <pre className="max-h-[36rem] overflow-auto rounded-xl bg-surface-3 p-4 font-mono text-xs leading-relaxed text-ink">
+        <pre
+          tabIndex={0}
+          aria-label={`${labelFor(artifact.output_type)} as JSON`}
+          className="max-h-[36rem] overflow-auto rounded-xl bg-surface-3 p-4 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-ink"
+        >
           {JSON.stringify(content, null, 2)}
         </pre>
       ) : (
@@ -203,12 +240,45 @@ function ArtifactBody({ artifact, job }: { artifact: Artifact; job: Job }) {
   )
 }
 
+function DownloadMenu({ artifact }: { artifact: Artifact }) {
+  const formats = artifact.export_formats.filter((f) => f !== 'json')
+  if (!formats.length) return null
+  return (
+    <Popover
+      label="Download"
+      triggerClassName="inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand px-2.5 text-xs font-medium text-on-brand hover:bg-brand-strong"
+      trigger={
+        <>
+          <Download className="size-3.5" aria-hidden /> Download <ChevronDown className="size-3.5" aria-hidden />
+        </>
+      }
+    >
+      <p className="mb-2 text-xs font-semibold tracking-wide text-ink-muted uppercase">Export {labelFor(artifact.output_type).toLowerCase()}</p>
+      <ul className="space-y-1">
+        {formats.map((f) => (
+          <li key={f}>
+            <a
+              href={downloadUrl(artifact.id, f)}
+              className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-ink hover:bg-surface-2"
+            >
+              <span className="grid h-7 w-12 place-items-center rounded-md bg-surface-3 font-mono text-[11px] font-semibold text-ink uppercase">{f}</span>
+              {EXPORT_LABEL[f] ?? f.toUpperCase()}
+              <Download className="ml-auto size-4 text-ink-muted" aria-hidden />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </Popover>
+  )
+}
+
 function GeneratingSkeleton({ artifact }: { artifact: Artifact }) {
   const S = FORMAT_STYLE[artifact.output_type]
+  const still = useReducedMotion()
   return (
     <div className="flex flex-col items-center py-10 text-center">
       <div className="relative mb-4 grid size-16 place-items-center">
-        {artifact.status === 'running' && (
+        {artifact.status === 'running' && !still && (
           <motion.span
             className="absolute inset-0 rounded-2xl border-2 border-brand/40"
             animate={{ scale: [1, 1.25], opacity: [0.8, 0] }}
@@ -227,7 +297,7 @@ function GeneratingSkeleton({ artifact }: { artifact: Artifact }) {
       </p>
       <div className="mt-6 w-full max-w-md space-y-2" aria-hidden>
         {[90, 70, 80].map((w, i) => (
-          <div key={i} className="h-3 animate-pulse rounded bg-surface-3" style={{ width: `${w}%` }} />
+          <div key={i} className="skeleton h-3 rounded" style={{ width: `${w}%` }} />
         ))}
       </div>
     </div>
@@ -247,12 +317,12 @@ function LoadingCard() {
 function EmptyState() {
   return (
     <Card className="relative overflow-hidden p-6 sm:p-10">
-      <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-accent/15 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-brand/15 blur-3xl" />
       <div className="relative mx-auto max-w-xl text-center">
-        <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-[#0b1626] shadow-pop">
+        <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-[#0b1626] shadow-pop dark:bg-surface-3 dark:ring-1 dark:ring-line">
           <BrandMark className="size-9" />
         </span>
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-balance text-ink sm:text-3xl">
+        <h2 data-results-heading tabIndex={-1} className="font-display text-2xl font-semibold tracking-tight text-balance text-ink sm:text-3xl">
           Turn one advisory into a complete communication pack
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted sm:text-base">

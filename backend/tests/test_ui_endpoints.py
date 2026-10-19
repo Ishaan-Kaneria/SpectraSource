@@ -6,18 +6,15 @@ import re
 
 import pytest
 from pydantic import BaseModel
-from sqlalchemy import create_engine, update
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import update
 
 from app import audit, llm, services
 from app.config import Settings
-from app.db import Base, get_db
 from app.generators import SPECS, SYSTEM_PROMPT, build_user_prompt, generate
 from app.llm import get_provider
 from app.llm import mock as mock_module
 from app.llm.mock import MockProvider
 from app.llm.mock_content import BUILDERS, Brief, parse_prompt
-from app.main import app
 from app.models import Artifact, AuditEvent, Job
 from app.schemas import GenerationParams, OutputType
 
@@ -62,28 +59,6 @@ def _verify(client, artifact_id):
     r = client.get(f"/api/artifacts/{artifact_id}/verify")
     assert r.status_code == 200, r.text
     return r.json()
-
-
-@pytest.fixture
-def fresh_db(client, tmp_path, monkeypatch):
-    """Point the API and the background worker at an empty database for one test, so the
-    audit chain is known to be intact (another test deliberately breaks the shared one)."""
-    engine = create_engine(f"sqlite:///{tmp_path / 'fresh.db'}", connect_args={"check_same_thread": False})
-    Base.metadata.create_all(engine)
-    session = sessionmaker(bind=engine, expire_on_commit=False)
-
-    def _get_db():
-        db = session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    monkeypatch.setattr(services, "SessionLocal", session)
-    app.dependency_overrides[get_db] = _get_db
-    yield session
-    app.dependency_overrides.pop(get_db, None)
-    engine.dispose()
 
 
 # ---------- history sidebar ----------

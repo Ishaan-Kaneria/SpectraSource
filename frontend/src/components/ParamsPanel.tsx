@@ -21,23 +21,31 @@ export function ParamsPanel({ params, onChange }: { params: GenerationParams; on
   return (
     <section>
       <SectionTitle step={3} title="Audience and tone" />
-      <div role="radiogroup" aria-label="Level of detail" className="mb-3 grid grid-cols-3 rounded-xl border border-line bg-surface-2 p-1">
-        {DETAIL.map((d) => (
-          <button
-            key={d}
-            type="button"
-            role="radio"
-            aria-checked={params.detail_level === d}
-            onClick={() => set('detail_level', d)}
-            className={cx(
-              'h-8 rounded-lg text-xs font-medium capitalize transition-colors',
-              params.detail_level === d ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink',
-            )}
-          >
-            {d}
-          </button>
-        ))}
-      </div>
+      <fieldset className="mb-3">
+        <legend className="sr-only">Level of detail</legend>
+        <div className="grid grid-cols-3 rounded-xl border border-line bg-surface-2 p-1">
+          {DETAIL.map((d) => (
+            <label
+              key={d}
+              className={cx(
+                'grid h-8 cursor-pointer place-items-center rounded-lg text-xs font-medium capitalize transition-colors',
+                'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-focus',
+                params.detail_level === d ? 'bg-surface text-ink shadow-sm dark:bg-surface-3' : 'text-ink-muted hover:text-ink',
+              )}
+            >
+              <input
+                type="radio"
+                name="detail_level"
+                value={d}
+                checked={params.detail_level === d}
+                onChange={() => set('detail_level', d)}
+                className="sr-only"
+              />
+              {d}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <button
         type="button"
@@ -47,24 +55,28 @@ export function ParamsPanel({ params, onChange }: { params: GenerationParams; on
         className="flex w-full items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-left text-sm hover:bg-surface-2"
       >
         <span className="min-w-0 flex-1 truncate text-ink-muted">
-          <span className="text-ink">{params.audience}</span> · {params.tone} · {params.language} · {params.objective}
+          <span className="text-ink capitalize">{params.audience}</span> · {params.tone} · {params.language}
         </span>
+        <span className="shrink-0 text-xs font-medium text-brand-ink">{open ? 'Done' : 'Edit'}</span>
         <ChevronDown className={cx('size-4 shrink-0 text-ink-muted transition-transform', open && 'rotate-180')} aria-hidden />
-        <span className="sr-only">{open ? 'Hide' : 'Show'} options</span>
+        <span className="sr-only">audience, tone, language, objective and style</span>
       </button>
       <div id="params-fields" hidden={!open} className="mt-3 grid grid-cols-2 gap-3">
         {FIELDS.map((f) => (
           <label key={f.key} className="text-xs">
             <span className="mb-1 block font-medium text-ink-muted">{f.label}</span>
-            <select
-              value={params[f.key]}
-              onChange={(e) => set(f.key, e.target.value)}
-              className="h-10 w-full rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-ink focus:border-brand focus:outline-none"
-            >
-              {f.options.map((opt) => (
-                <option key={opt}>{opt}</option>
-              ))}
-            </select>
+            <span className="relative block">
+              <select
+                value={params[f.key]}
+                onChange={(e) => set(f.key, e.target.value)}
+                className="h-10 w-full appearance-none rounded-lg border border-line-strong bg-surface pr-8 pl-2.5 text-sm text-ink focus:border-brand"
+              >
+                {f.options.map((opt) => (
+                  <option key={opt}>{opt}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-ink-muted" aria-hidden />
+            </span>
           </label>
         ))}
       </div>

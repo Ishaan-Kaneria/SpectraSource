@@ -29,8 +29,10 @@ function Sheet({ children }: { children: ReactNode }) {
   )
 }
 
-function Heading({ children }: { children: ReactNode }) {
-  return <h4 className="mt-7 mb-2 border-b border-line pb-1.5 font-display text-base font-semibold text-ink">{children}</h4>
+function Heading({ children, first }: { children: ReactNode; first?: boolean }) {
+  return (
+    <h4 className={cx('mb-2 border-b border-line pb-1.5 font-display text-base font-semibold text-ink', first ? 'mt-0' : 'mt-7')}>{children}</h4>
+  )
 }
 
 export function AdvisoryPreview({ value, createdAt }: { value: Advisory; createdAt?: string }) {
@@ -42,11 +44,16 @@ export function AdvisoryPreview({ value, createdAt }: { value: Advisory; created
         <div className="flex items-center gap-3">
           <BrandMark className="size-10" />
           <div>
-            <p className="text-xs font-semibold tracking-[0.18em] text-ink-muted uppercase">Security advisory</p>
+            <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-ink-muted uppercase">
+              Security advisory
+              <span className="rounded-sm bg-[#0b1626] px-1.5 py-0.5 font-mono text-[10px] tracking-normal text-white dark:bg-surface-3 dark:text-ink" title="Traffic Light Protocol: may be shared publicly">
+                TLP:CLEAR
+              </span>
+            </p>
             <p className="font-mono text-sm text-ink">{str(value.advisory_id)}</p>
           </div>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <span
             className={cx(
               'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold tracking-wide uppercase',
@@ -126,14 +133,14 @@ export function SummaryPreview({ value, params, createdAt }: { value: ExecutiveS
         <dd className="text-ink">{today(createdAt)}</dd>
       </dl>
 
-      <div className="mt-6 rounded-xl bg-[#0b1626] p-5 text-white">
-        <p className="mb-1 font-mono text-[11px] tracking-[0.2em] text-[#9fe7e0] uppercase">Bottom line up front</p>
+      <div className="mt-6 rounded-xl bg-[#0b1626] p-5 text-white dark:bg-brand-soft dark:text-ink dark:ring-1 dark:ring-brand/30">
+        <p className="mb-1 font-mono text-[11px] tracking-[0.2em] text-[#9fe7e0] uppercase dark:text-brand-ink">Bottom line up front</p>
         <p className="text-base leading-relaxed font-medium sm:text-lg">{str(value.bottom_line)}</p>
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <div>
-          <Heading>Key points</Heading>
+          <Heading first>Key points</Heading>
           <ul className="space-y-2">
             {arr(value.key_points).map((p, i) => (
               <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-ink">
@@ -144,7 +151,7 @@ export function SummaryPreview({ value, params, createdAt }: { value: ExecutiveS
           </ul>
         </div>
         <div>
-          <Heading>Implications</Heading>
+          <Heading first>Implications</Heading>
           <ul className="space-y-2">
             {arr(value.implications).map((p, i) => (
               <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-ink">

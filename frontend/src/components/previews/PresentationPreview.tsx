@@ -21,8 +21,13 @@ export function PresentationPreview({ value }: { value: Presentation }) {
     setI(next)
   }
 
+  // Keep the current thumbnail visible by scrolling the strip only, never the page.
   useEffect(() => {
-    strip.current?.querySelector<HTMLElement>(`[data-i="${i}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+    const box = strip.current
+    const el = box?.querySelector<HTMLElement>(`[data-i="${i}"]`)
+    if (!box || !el) return
+    if (el.offsetLeft < box.scrollLeft) box.scrollLeft = el.offsetLeft - 4
+    else if (el.offsetLeft + el.offsetWidth > box.scrollLeft + box.clientWidth) box.scrollLeft = el.offsetLeft + el.offsetWidth - box.clientWidth + 4
   }, [i])
 
   const onKey = (e: KeyboardEvent) => {
@@ -38,9 +43,9 @@ export function PresentationPreview({ value }: { value: Presentation }) {
         role="region"
         aria-roledescription="carousel"
         aria-label={`Slides, ${i + 1} of ${pages.length}. Use arrow keys to move.`}
-        className="group relative overflow-hidden rounded-xl bg-[#0b1626] shadow-pop ring-1 ring-black/10"
+        className="group relative overflow-hidden rounded-xl bg-[#0b1626] shadow-pop ring-1 ring-black/10 dark:ring-white/10"
       >
-        <div className="@container relative aspect-video">
+        <div className="@container relative aspect-square sm:aspect-video">
           <AnimatePresence initial={false} custom={dir} mode="popLayout">
             <motion.div
               key={i}
@@ -51,34 +56,37 @@ export function PresentationPreview({ value }: { value: Presentation }) {
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className="absolute inset-0"
             >
-              {page.kind === 'title' ? <TitleSlide value={value} /> : <ContentSlide slide={page.slide} n={page.n} total={slides.length} deck={str(value.title)} />}
+              {page.kind === 'title' ? <TitleSlide value={value} /> : <ContentSlide slide={page.slide} n={page.n + 1} total={pages.length} deck={str(value.title)} />}
             </motion.div>
           </AnimatePresence>
         </div>
-        <NavButton side="left" disabled={i === 0} onClick={() => go(i - 1)} />
-        <NavButton side="right" disabled={i === pages.length - 1} onClick={() => go(i + 1)} />
-        <div className="absolute right-3 bottom-3 rounded-md bg-black/55 px-2 py-0.5 font-mono text-[11px] text-white" aria-hidden>
-          {i + 1} / {pages.length}
-        </div>
       </div>
 
-      <div ref={strip} className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Slide thumbnails">
+      <div className="flex items-center justify-between gap-3">
+        <NavButton side="left" disabled={i === 0} onClick={() => go(i - 1)} />
+        <p className="text-sm text-ink-muted" aria-live="polite">
+          Slide <span className="font-semibold text-ink">{i + 1}</span> of {pages.length}
+        </p>
+        <NavButton side="right" disabled={i === pages.length - 1} onClick={() => go(i + 1)} />
+      </div>
+
+      <div ref={strip} className="relative flex gap-2 overflow-x-auto p-0.5 pb-1" aria-label="Slide thumbnails" role="group">
         {pages.map((p, n) => (
           <button
             key={n}
             data-i={n}
             type="button"
-            role="tab"
-            aria-selected={n === i}
+            tabIndex={-1}
+            aria-current={n === i ? 'true' : undefined}
             aria-label={`Slide ${n + 1}: ${p.kind === 'title' ? str(value.title) : str(p.slide.title)}`}
             onClick={() => go(n)}
             className={cx(
-              '@container relative aspect-video w-28 shrink-0 overflow-hidden rounded-md bg-[#0b1626] ring-2 transition-[box-shadow,opacity]',
-              n === i ? 'ring-brand' : 'opacity-70 ring-transparent hover:opacity-100',
+              '@container relative aspect-video w-28 shrink-0 overflow-hidden rounded-md bg-[#0b1626] text-left ring-2 transition-[box-shadow]',
+              n === i ? 'ring-brand' : 'ring-line hover:ring-line-strong',
             )}
           >
             <div className="pointer-events-none absolute inset-0 origin-top-left">
-              {p.kind === 'title' ? <TitleSlide value={value} mini /> : <ContentSlide slide={p.slide} n={p.n} total={slides.length} deck="" mini />}
+              {p.kind === 'title' ? <TitleSlide value={value} mini /> : <ContentSlide slide={p.slide} n={p.n + 1} total={pages.length} deck="" mini />}
             </div>
           </button>
         ))}
@@ -113,15 +121,14 @@ function NavButton({ side, disabled, onClick }: { side: 'left' | 'right'; disabl
   return (
     <button
       type="button"
-      onClick={onClick}
-      disabled={disabled}
+      onClick={() => !disabled && onClick()}
+      aria-disabled={disabled}
       aria-label={side === 'left' ? 'Previous slide' : 'Next slide'}
-      className={cx(
-        'absolute top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[#0b1626] shadow-md transition-opacity hover:bg-white disabled:opacity-0 sm:size-10',
-        side === 'left' ? 'left-2 sm:left-3' : 'right-2 sm:right-3',
-      )}
+      className="inline-flex h-9 items-center gap-1 rounded-lg border border-line-strong bg-surface px-3 text-sm font-medium text-ink hover:bg-surface-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
     >
-      <Icon className="size-5" />
+      {side === 'left' && <Icon className="size-4" aria-hidden />}
+      <span className="hidden sm:inline">{side === 'left' ? 'Previous' : 'Next'}</span>
+      {side === 'right' && <Icon className="size-4" aria-hidden />}
     </button>
   )
 }
@@ -133,12 +140,12 @@ function TitleSlide({ value, mini }: { value: Presentation; mini?: boolean }) {
       <div className="absolute inset-0 bg-[linear-gradient(#ffffff0a_1px,transparent_1px),linear-gradient(90deg,#ffffff0a_1px,transparent_1px)] bg-[size:6cqw_6cqw]" />
       <div className="absolute top-[7cqw] left-[7cqw] flex items-center gap-[1.4cqw]">
         <BrandMark className="size-[4.5cqw]" />
-        {!mini && <span className="text-[1.8cqw] font-medium tracking-[0.2em] text-[#9fe7e0] uppercase">Briefing</span>}
+        {!mini && <span className="text-[max(10px,1.8cqw)] leading-none font-medium tracking-[0.2em] text-[#9fe7e0] uppercase">Briefing</span>}
       </div>
       <div className="relative">
         <div className="mb-[2.5cqw] h-[0.6cqw] w-[10cqw] rounded-full bg-[#f2a93b]" />
-        <h3 className="font-display text-[5cqw] leading-[1.08] font-semibold text-balance">{str(value.title)}</h3>
-        <p className="mt-[2cqw] max-w-[80%] text-[2.2cqw] leading-snug text-[#c9d6e3]">{str(value.subtitle)}</p>
+        <h3 className={cx('font-display leading-[1.08] font-semibold text-balance', mini ? 'text-[5cqw]' : 'text-[max(16px,5cqw)]')}>{str(value.title)}</h3>
+        <p className={cx('mt-[2cqw] max-w-[85%] leading-snug text-[#c9d6e3]', mini ? 'text-[2.2cqw]' : 'text-[max(11px,2.2cqw)]')}>{str(value.subtitle)}</p>
       </div>
     </div>
   )
@@ -150,20 +157,20 @@ function ContentSlide({ slide, n, total, deck, mini }: { slide: Slide; n: number
     <div className="flex h-full bg-[#f7f9fb] text-[#0b1626]">
       <div className="w-[1.2cqw] bg-[linear-gradient(#0f8b8d,#f2a93b)]" />
       <div className="flex min-w-0 flex-1 flex-col p-[5.5cqw]">
-        <div className="mb-[1cqw] font-mono text-[1.5cqw] tracking-widest text-[#0f6e70] uppercase">
+        <div className={cx('mb-[1cqw] font-mono leading-none tracking-widest text-[#0f6e70] uppercase', mini ? 'text-[1.5cqw]' : 'text-[max(9px,1.5cqw)]')}>
           {String(n).padStart(2, '0')} / {String(total).padStart(2, '0')}
         </div>
-        <h3 className="font-display text-[3.6cqw] leading-tight font-semibold text-balance">{str(slide.title)}</h3>
+        <h3 className={cx('font-display leading-tight font-semibold text-balance', mini ? 'text-[3.6cqw]' : 'text-[max(14px,3.6cqw)]')}>{str(slide.title)}</h3>
         <ul className="mt-[3cqw] space-y-[1.6cqw]">
           {bullets.slice(0, 6).map((b, k) => (
-            <li key={k} className="flex gap-[1.6cqw] text-[2.15cqw] leading-snug text-[#24364a]">
+            <li key={k} className={cx('flex gap-[1.6cqw] leading-snug text-[#24364a]', mini ? 'text-[2.15cqw]' : 'text-[max(11px,2.15cqw)]')}>
               <span className="mt-[0.9cqw] size-[1cqw] shrink-0 rotate-45 bg-[#0f8b8d]" />
               <span>{b}</span>
             </li>
           ))}
         </ul>
         {!mini && deck && (
-          <div className="mt-auto flex items-center justify-between border-t border-[#d5dde6] pt-[1.5cqw] text-[1.4cqw] text-[#4d5f73]">
+          <div className="mt-auto flex items-center justify-between gap-4 border-t border-[#d5dde6] pt-[1.5cqw] text-[max(9px,1.4cqw)] leading-none text-[#4d5f73]">
             <span className="truncate">{deck}</span>
             <span>SpectraSource</span>
           </div>

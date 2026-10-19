@@ -16,7 +16,7 @@ type Props = {
   onRefresh: () => void
 }
 
-function HistoryList({ jobs, error, activeId, onSelect, onNew, onRefresh }: Props) {
+function HistoryList({ jobs, error, activeId, onSelect, onNew, onRefresh, onClose }: Props & { onClose?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3">
@@ -30,9 +30,19 @@ function HistoryList({ jobs, error, activeId, onSelect, onNew, onRefresh }: Prop
           >
             <RefreshCw className="size-4" />
           </button>
-          <Button size="sm" variant="primary" onClick={onNew}>
+          <Button size="sm" onClick={onNew}>
             <Plus className="size-4" /> New
           </Button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close history"
+              className="grid size-8 place-items-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-ink"
+            >
+              <X className="size-4" />
+            </button>
+          )}
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
@@ -67,21 +77,16 @@ function HistoryList({ jobs, error, activeId, onSelect, onNew, onRefresh }: Prop
                       <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{title}</span>
                     </div>
                     <div className="mt-1.5 flex items-center justify-between gap-2 pl-4">
-                      <div className="flex -space-x-1">
+                      <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+                        <span className="mr-1 font-mono text-[11px] text-ink-muted">#{j.id}</span>
                         {j.output_types.slice(0, 7).map((t) => {
                           const S = FORMAT_STYLE[t]
                           if (!S) return null
-                          return (
-                            <span
-                              key={t}
-                              title={labelFor(t)}
-                              className={cx('grid size-5 place-items-center rounded-full bg-surface ring-2 ring-surface', S.text)}
-                            >
-                              <S.icon className="size-3" aria-hidden />
-                            </span>
-                          )
+                          return <S.icon key={t} className={cx('size-3.5 shrink-0', S.text)} aria-hidden />
                         })}
-                        <span className="sr-only">{j.output_types.map(labelFor).join(', ')}</span>
+                        <span className="sr-only">
+                          , {j.output_types.length} formats: {j.output_types.map(labelFor).join(', ')}
+                        </span>
                       </div>
                       <span className="shrink-0 text-xs text-ink-muted">{timeAgo(j.created_at)}</span>
                     </div>
@@ -100,12 +105,36 @@ export function HistorySidebar(props: Props & { open: boolean; onClose: () => vo
   const { open, onClose, onSelect, onNew } = props
   const panel = useRef<HTMLDivElement>(null)
 
+  // Modal drawer: trap Tab inside, close on Escape, lock page scroll, give focus back on close.
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const opener = document.activeElement as HTMLElement | null
+    const focusables = () =>
+      Array.from(panel.current?.querySelectorAll<HTMLElement>('button, a[href], input, [tabindex]:not([tabindex="-1"])') ?? [])
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return onClose()
+      if (e.key !== 'Tab') return
+      const f = focusables()
+      if (!f.length) return
+      const first = f[0]
+      const last = f[f.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     document.addEventListener('keydown', onKey)
-    panel.current?.querySelector<HTMLElement>('button')?.focus()
-    return () => document.removeEventListener('keydown', onKey)
+    requestAnimationFrame(() => focusables()[0]?.focus())
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+      opener?.focus()
+    }
   }, [open, onClose])
 
   const pick = (id: number) => {
@@ -121,13 +150,13 @@ export function HistorySidebar(props: Props & { open: boolean; onClose: () => vo
     <>
       <aside
         aria-label="History"
-        className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-72 shrink-0 border-r border-line bg-surface/60 xl:block"
+        className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-72 shrink-0 border-r border-line bg-surface/60 min-[1440px]:block"
       >
-        <HistoryList {...props} />
+        <HistoryList {...props} onClose={undefined} />
       </aside>
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-50 xl:hidden">
+          <div className="fixed inset-0 z-50 min-[1440px]:hidden">
             <motion.div
               className="absolute inset-0 bg-scrim"
               initial={{ opacity: 0 }}
@@ -146,17 +175,7 @@ export function HistorySidebar(props: Props & { open: boolean; onClose: () => vo
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 420, damping: 40 }}
             >
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close history"
-                className="absolute top-3 right-3 z-10 grid size-8 place-items-center rounded-md text-ink-muted hover:bg-surface-2"
-              >
-                <X className="size-4" />
-              </button>
-              <div className="h-full pt-8">
-                <HistoryList {...props} onSelect={pick} onNew={fresh} />
-              </div>
+              <HistoryList {...props} onSelect={pick} onNew={fresh} onClose={onClose} />
             </motion.div>
           </div>
         )}

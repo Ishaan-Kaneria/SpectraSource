@@ -1,4 +1,3 @@
-import { motion } from 'motion/react'
 import { Check } from 'lucide-react'
 import { FORMAT_STYLE } from '../lib/formats'
 import { OUTPUT_TYPES, type OutputType } from '../types'
@@ -19,7 +18,7 @@ export function FormatPicker({ selected, onChange }: { selected: OutputType[]; o
           <button
             type="button"
             onClick={() => onChange(all ? [] : OUTPUT_TYPES.map((o) => o.id))}
-            className="rounded-md px-1.5 py-0.5 font-medium text-brand-ink hover:bg-brand-soft"
+            className="inline-flex min-h-7 items-center rounded-md px-2 font-medium text-brand-ink hover:bg-brand-soft"
           >
             {all ? 'Clear all' : 'Select all 7'}
           </button>
@@ -30,11 +29,10 @@ export function FormatPicker({ selected, onChange }: { selected: OutputType[]; o
           const on = selected.includes(o.id)
           const S = FORMAT_STYLE[o.id]
           return (
-            <motion.label
+            <label
               key={o.id}
-              whileTap={{ scale: 0.97 }}
               className={cx(
-                'relative flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 pr-3 transition-[border-color,background-color,box-shadow] duration-150',
+                'relative flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 pr-3 transition-[border-color,background-color,box-shadow,transform] duration-150 active:scale-[0.98] motion-reduce:active:scale-100 lg:flex-col lg:items-start lg:gap-2 lg:p-3',
                 'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
                 on ? 'border-brand bg-brand-soft shadow-sm' : 'border-line bg-surface hover:border-line-strong hover:bg-surface-2',
               )}
@@ -44,19 +42,19 @@ export function FormatPicker({ selected, onChange }: { selected: OutputType[]; o
                 <S.icon className="size-5" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm leading-tight font-semibold text-ink">{o.label}</span>
+                <span className="block text-sm leading-tight font-semibold text-ink lg:pr-5">{o.label}</span>
                 <span className="mt-0.5 block text-xs leading-snug text-ink-muted lg:sr-only">{o.blurb}</span>
               </span>
               <span
                 aria-hidden
                 className={cx(
-                  'grid size-5 shrink-0 place-items-center rounded-full border transition-colors',
+                  'grid size-5 shrink-0 place-items-center rounded-full border transition-colors lg:absolute lg:top-2.5 lg:right-2.5',
                   on ? 'border-brand bg-brand text-on-brand' : 'border-line-strong bg-surface',
                 )}
               >
                 {on && <Check className="size-3.5" strokeWidth={3} />}
               </span>
-            </motion.label>
+            </label>
           )
         })}
       </div>

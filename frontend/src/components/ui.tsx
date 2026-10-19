@@ -5,9 +5,9 @@ import { STATUS_LABEL, cx } from '../lib/cx'
 type Variant = 'primary' | 'secondary' | 'ghost'
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-brand text-on-brand shadow-sm hover:bg-brand-strong active:translate-y-px disabled:bg-surface-3 disabled:text-ink-subtle disabled:shadow-none',
+    'bg-brand text-on-brand shadow-sm hover:bg-brand-strong active:translate-y-px disabled:bg-surface-3 disabled:text-ink-muted disabled:shadow-none aria-disabled:cursor-not-allowed aria-disabled:bg-surface-3 aria-disabled:text-ink-muted aria-disabled:shadow-none aria-disabled:active:translate-y-0',
   secondary:
-    'border border-line-strong bg-surface text-ink hover:bg-surface-2 active:translate-y-px disabled:text-ink-subtle',
+    'border border-line-strong bg-surface text-ink hover:bg-surface-2 active:translate-y-px disabled:text-ink-muted aria-disabled:cursor-not-allowed aria-disabled:text-ink-muted aria-disabled:opacity-60',
   ghost: 'text-ink-muted hover:bg-surface-2 hover:text-ink disabled:text-ink-subtle',
 }
 

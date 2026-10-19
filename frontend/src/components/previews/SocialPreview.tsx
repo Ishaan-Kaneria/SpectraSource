@@ -135,7 +135,7 @@ export function LinkedInPreview({ value }: { value: LinkedInPost }) {
               type="button"
               onClick={() => setMore((m) => !m)}
               aria-expanded={more}
-              className="mt-1 text-sm font-medium text-ink-muted hover:text-brand-ink hover:underline"
+              className="mt-1 inline-flex min-h-6 items-center text-sm font-medium text-ink-muted hover:text-brand-ink hover:underline"
             >
               {more ? 'Show less' : '…see more'}
             </button>

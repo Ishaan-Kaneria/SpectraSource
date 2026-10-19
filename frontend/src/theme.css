@@ -389,6 +389,9 @@
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
     scrollbar-color: var(--line-strong) transparent;
+    /* Keep focused controls clear of the sticky header and the sticky Generate bar. */
+    scroll-padding-top: 5rem;
+    scroll-padding-bottom: 8rem;
   }
   @media (prefers-reduced-motion: no-preference) {
     html {

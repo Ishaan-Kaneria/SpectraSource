@@ -1,11 +1,11 @@
 export const OUTPUT_TYPES = [
-  { id: 'presentation', label: 'Presentation', blurb: 'Slide deck with speaker notes' },
-  { id: 'advisory', label: 'Advisory', blurb: 'Formal security advisory' },
-  { id: 'executive_summary', label: 'Executive summary', blurb: 'One-page brief for leadership' },
-  { id: 'infographic', label: 'Infographic', blurb: 'Key facts as a visual poster' },
-  { id: 'linkedin', label: 'LinkedIn post', blurb: 'Professional social post' },
-  { id: 'twitter', label: 'X thread', blurb: 'Short public thread' },
-  { id: 'video', label: 'Video package', blurb: 'Script, storyboard and subtitles' },
+  { id: 'presentation', label: 'Presentation', short: 'Slides', blurb: 'Slide deck with speaker notes' },
+  { id: 'advisory', label: 'Advisory', short: 'Advisory', blurb: 'Formal security advisory' },
+  { id: 'executive_summary', label: 'Executive summary', short: 'Brief', blurb: 'One-page brief for leadership' },
+  { id: 'infographic', label: 'Infographic', short: 'Poster', blurb: 'Key facts as a visual poster' },
+  { id: 'linkedin', label: 'LinkedIn post', short: 'LinkedIn', blurb: 'Professional social post' },
+  { id: 'twitter', label: 'X thread', short: 'X thread', blurb: 'Short public thread' },
+  { id: 'video', label: 'Video package', short: 'Video', blurb: 'Script, storyboard and subtitles' },
 ] as const
 
 export type OutputType = (typeof OUTPUT_TYPES)[number]['id']
@@ -72,3 +72,4 @@ export interface ArtifactVerify {
 }
 
 export const labelFor = (t: OutputType) => OUTPUT_TYPES.find((o) => o.id === t)?.label ?? t
+export const shortLabelFor = (t: OutputType) => OUTPUT_TYPES.find((o) => o.id === t)?.short ?? t

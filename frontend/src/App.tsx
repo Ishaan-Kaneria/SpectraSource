@@ -14,22 +14,25 @@ import { DEFAULT_PARAMS } from './lib/params'
 import type { GenerationParams, Job, JobSummary, OutputType } from './types'
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e))
+const DEFAULT_FORMATS: OutputType[] = ['presentation', 'advisory', 'executive_summary', 'linkedin']
 
 export default function App() {
-  const { mode, setMode } = useTheme()
+  const { dark, toggle: toggleTheme } = useTheme()
   const [text, setText] = useState('')
   const [file, setFile] = useState<File | null>(null)
-  const [selected, setSelected] = useState<OutputType[]>(['presentation', 'advisory', 'executive_summary', 'linkedin'])
+  const [selected, setSelected] = useState<OutputType[]>(DEFAULT_FORMATS)
   const [params, setParams] = useState<GenerationParams>(DEFAULT_PARAMS)
   const [job, setJob] = useState<Job | null>(null)
   const [loadingJob, setLoadingJob] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [panelError, setPanelError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [server, setServer] = useState<ServerState>({ state: 'checking' })
   const [history, setHistory] = useState<JobSummary[] | null>(null)
   const [historyError, setHistoryError] = useState<string | null>(null)
   const [drawer, setDrawer] = useState(false)
   const results = useRef<HTMLDivElement>(null)
+  const closeDrawer = useCallback(() => setDrawer(false), [])
 
   const pingServer = useCallback(() => {
     health()
@@ -54,6 +57,14 @@ export default function App() {
     if (server.state === 'ready') refreshHistory()
   }, [server.state, refreshHistory])
 
+  // Keep history dots live while any listed job is still generating.
+  const historyBusy = history?.some((j) => j.status === 'pending' || j.status === 'running') ?? false
+  useEffect(() => {
+    if (!historyBusy) return
+    const t = setInterval(refreshHistory, 3000)
+    return () => clearInterval(t)
+  }, [historyBusy, refreshHistory])
+
   // Poll the open job until every output has finished, then refresh the history list.
   const jobId = job?.id
   const jobDone = job?.status === 'done' || job?.status === 'failed'
@@ -66,8 +77,12 @@ export default function App() {
     let live = true
     const t = setInterval(() => {
       getJob(jobId)
-        .then((j) => live && setJob((cur) => (cur?.id === j.id ? j : cur)))
-        .catch((e) => live && setError(msg(e)))
+        .then((j) => {
+          if (!live) return
+          setJob((cur) => (cur?.id === j.id ? j : cur))
+          setPanelError(null)
+        })
+        .catch((e) => live && setPanelError(`Lost contact with the server: ${msg(e)} Retrying…`))
     }, 1200)
     return () => {
       live = false
@@ -75,15 +90,23 @@ export default function App() {
     }
   }, [jobId, jobDone, refreshHistory])
 
-  const showResults = () => {
-    if (window.matchMedia('(max-width: 1023px)').matches) {
-      requestAnimationFrame(() => results.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-    }
-  }
+  // Bring the output pack into view, clear of the sticky header, and move focus to it.
+  const showResults = () =>
+    setTimeout(() => {
+      const el = results.current
+      if (!el) return
+      window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 80) })
+      el.querySelector<HTMLElement>('[data-results-heading]')?.focus({ preventScroll: true })
+    }, 60)
 
+  const inFlight = useRef(false)
   async function submit(e: React.FormEvent) {
     e.preventDefault()
+    // The button stays focusable while unavailable (aria-disabled), so guard here.
+    if (!canSubmit || inFlight.current) return
+    inFlight.current = true
     setError(null)
+    setPanelError(null)
     setSubmitting(true)
     try {
       const j = await createJob({ text, file, outputTypes: selected, params })
@@ -93,34 +116,51 @@ export default function App() {
     } catch (err) {
       setError(msg(err))
     } finally {
+      inFlight.current = false
       setSubmitting(false)
     }
   }
 
+  // Ignore a slow response for a job the user has already clicked away from.
+  const openRequest = useRef(0)
   const openJob = useCallback((id: number) => {
+    const req = ++openRequest.current
     setLoadingJob(true)
-    setError(null)
+    setPanelError(null)
     getJob(id)
       .then((j) => {
+        if (req !== openRequest.current) return
         setJob(j)
         setSelected(j.artifacts.map((a) => a.output_type))
         setParams({ ...DEFAULT_PARAMS, ...j.params })
         showResults()
       })
-      .catch((e) => setError(msg(e)))
-      .finally(() => setLoadingJob(false))
+      .catch((e) => {
+        if (req !== openRequest.current) return
+        setPanelError(`Couldn't open job #${id}: ${msg(e)}`)
+        showResults()
+      })
+      .finally(() => req === openRequest.current && setLoadingJob(false))
   }, [])
 
   const newJob = () => {
+    openRequest.current++
     setJob(null)
     setText('')
     setFile(null)
+    setSelected(DEFAULT_FORMATS)
+    setParams(DEFAULT_PARAMS)
     setError(null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setPanelError(null)
+    setLoadingJob(false)
+    window.scrollTo({ top: 0 })
+    requestAnimationFrame(() => document.getElementById('source-text')?.focus({ preventScroll: true }))
   }
 
   const hasSource = Boolean(text.trim() || file)
-  const canSubmit = selected.length > 0 && hasSource && !submitting && server.state !== 'down'
+  const jobRunning = job != null && !jobDone
+  const doneCount = job?.artifacts.filter((a) => a.status === 'done' || a.status === 'failed').length ?? 0
+  const canSubmit = selected.length > 0 && hasSource && !submitting && !jobRunning && server.state !== 'down'
   const why = !hasSource ? 'Add a file or paste text to begin' : selected.length === 0 ? 'Pick at least one format' : null
 
   return (
@@ -134,24 +174,26 @@ export default function App() {
       <Header
         server={server}
         onRetry={checkServer}
-        theme={mode}
-        onTheme={setMode}
+        dark={dark}
+        onToggleTheme={toggleTheme}
         onHistory={() => setDrawer(true)}
+        historyOpen={drawer}
         ledgerKey={`${job?.id}-${job?.status}`}
       />
       <div className="mx-auto flex max-w-[1680px]">
         <HistorySidebar
           jobs={history}
-          error={historyError}
+          error={server.state === 'down' ? 'The server is offline.' : historyError}
           activeId={job?.id ?? null}
           onSelect={openJob}
           onNew={newJob}
           onRefresh={refreshHistory}
           open={drawer}
-          onClose={() => setDrawer(false)}
+          onClose={closeDrawer}
         />
-        <main className="grid min-w-0 flex-1 items-start gap-5 p-4 lg:grid-cols-[minmax(22rem,26rem)_minmax(0,1fr)] lg:gap-6 lg:p-6">
-          <form id="composer" onSubmit={submit}>
+        <main className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] items-start gap-5 p-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:p-6 2xl:grid-cols-[26rem_minmax(0,1fr)]">
+          <h1 className="sr-only">SpectraSource: turn one source into every format</h1>
+          <form id="composer" onSubmit={submit} tabIndex={-1} className="min-w-0 focus:outline-none" aria-label="Create an output pack">
             <Card className="space-y-6 p-4 sm:p-5">
               <SourceInput text={text} onText={setText} file={file} onFile={setFile} />
               <FormatPicker selected={selected} onChange={setSelected} />
@@ -164,11 +206,15 @@ export default function App() {
                 </p>
               )}
 
-              <div>
-                <Button type="submit" variant="primary" size="lg" disabled={!canSubmit} className="w-full" aria-describedby="submit-why">
+              <div className="sticky bottom-0 z-10 -mx-4 -mb-4 rounded-b-2xl border-t border-line bg-surface/95 p-4 backdrop-blur sm:-mx-5 sm:-mb-5 sm:p-5">
+                <Button type="submit" variant="primary" size="lg" aria-disabled={!canSubmit} className="w-full" aria-describedby="submit-why">
                   {submitting ? (
                     <>
                       <Spinner className="size-5" /> Uploading…
+                    </>
+                  ) : jobRunning ? (
+                    <>
+                      <Spinner className="size-5" /> Generating {doneCount} of {job.artifacts.length}…
                     </>
                   ) : (
                     <>
@@ -178,14 +224,24 @@ export default function App() {
                   )}
                 </Button>
                 <p id="submit-why" className="mt-2 text-center text-xs text-ink-muted">
-                  {server.state === 'down' ? 'The server is offline. Use retry at the top.' : (why ?? 'Takes a few seconds per format.')}
+                  {server.state === 'down'
+                    ? 'The server is offline. Use retry at the top.'
+                    : jobRunning
+                      ? 'You can start another pack when this one finishes.'
+                      : (why ?? 'Each format takes a few seconds.')}
                 </p>
               </div>
             </Card>
           </form>
 
-          <div ref={results} className="min-w-0 scroll-mt-20">
-            <ResultsPanel job={job} loading={loadingJob} />
+          <div ref={results} className="min-w-0 space-y-3 [overflow-anchor:none]">
+            {panelError && (
+              <p role="alert" className="flex gap-2 rounded-xl border border-bad/40 bg-bad-soft p-3 text-sm text-bad-ink">
+                <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <span className="break-words">{panelError}</span>
+              </p>
+            )}
+            <ResultsPanel job={job} loading={loadingJob} onNew={newJob} />
           </div>
         </main>
       </div>

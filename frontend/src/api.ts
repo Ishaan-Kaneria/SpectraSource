@@ -28,13 +28,19 @@ export async function health(): Promise<{ status: string; llm_provider: string }
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    let detail = res.statusText
+    let detail: unknown = res.statusText
     try {
       detail = (await res.json()).detail ?? detail
     } catch {
       /* not JSON */
     }
-    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+    // FastAPI validation errors arrive as a list of {loc, msg}.
+    const text = Array.isArray(detail)
+      ? detail.map((d: { msg?: string }) => d?.msg ?? String(d)).join('; ')
+      : typeof detail === 'string'
+        ? detail
+        : JSON.stringify(detail)
+    throw new Error(text)
   }
   return res.json() as Promise<T>
 }

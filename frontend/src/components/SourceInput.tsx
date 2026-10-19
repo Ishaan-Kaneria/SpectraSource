@@ -1,10 +1,13 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { CloudUpload, File as FileIcon, FileAudio, FileImage, FileText, FileVideo, Sparkles, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { SAMPLE_SOURCE } from '../lib/sample'
 import { formatBytes } from '../lib/time'
 import { SectionTitle } from './ui'
 import { cx } from '../lib/cx'
+
+// Mirrors the backend's max_source_chars.
+const MAX_CHARS = 60_000
 
 export const ACCEPT = '.pdf,.docx,.txt,.md,.html,.png,.jpg,.jpeg,.webp,.mp4,.mov,.webm,.mp3,.wav,.m4a'
 const EXT = ACCEPT.split(',')
@@ -33,6 +36,16 @@ export function SourceInput({
   const input = useRef<HTMLInputElement>(null)
   const [drag, setDrag] = useState(false)
   const [reject, setReject] = useState<string | null>(null)
+  // Where keyboard focus should land after the drop zone and file preview swap places.
+  const focusNext = useRef<'remove' | 'choose' | null>(null)
+  const focusIf = (which: 'remove' | 'choose') => (el: HTMLElement | null) => {
+    if (el && focusNext.current === which) {
+      focusNext.current = null
+      el.focus()
+    }
+  }
+  const deferred = useDeferredValue(text)
+  const words = useMemo(() => (deferred.trim() ? deferred.trim().split(/\s+/).length : 0), [deferred])
 
   const take = (f: File | undefined) => {
     if (!f) return
@@ -42,6 +55,7 @@ export function SourceInput({
       return
     }
     setReject(null)
+    focusNext.current = 'remove'
     onFile(f)
   }
 
@@ -60,7 +74,7 @@ export function SourceInput({
           <button
             type="button"
             onClick={() => onText(SAMPLE_SOURCE)}
-            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-brand-ink hover:bg-brand-soft"
+            className="inline-flex min-h-7 items-center gap-1 rounded-md px-2 font-medium text-brand-ink hover:bg-brand-soft"
           >
             <Sparkles className="size-3.5" /> Try a sample advisory
           </button>
@@ -76,7 +90,14 @@ export function SourceInput({
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18 }}
           >
-            <FilePreview file={file} onRemove={() => onFile(null)} />
+            <FilePreview
+              file={file}
+              removeRef={focusIf('remove')}
+              onRemove={() => {
+                focusNext.current = 'choose'
+                onFile(null)
+              }}
+            />
           </motion.div>
         ) : (
           <motion.div key="drop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
@@ -100,6 +121,7 @@ export function SourceInput({
               </motion.span>
               <p className="text-sm text-ink">
                 <button
+                  ref={focusIf('choose')}
                   type="button"
                   onClick={() => input.current?.click()}
                   className="font-semibold text-brand-ink underline-offset-2 hover:underline after:absolute after:inset-0 after:content-['']"
@@ -131,29 +153,31 @@ export function SourceInput({
         </p>
       )}
 
-      <label htmlFor="source-text" className="mt-4 mb-1.5 block text-xs font-medium text-ink-muted">
-        {file ? 'Extra context for the AI (optional)' : 'Or paste text'}
-      </label>
-      <div className="relative">
-        <textarea
-          id="source-text"
-          value={text}
-          onChange={(e) => onText(e.target.value)}
-          rows={file ? 3 : 6}
-          placeholder={file ? 'e.g. Focus on what citizens should do' : 'Paste an advisory, report, article or brief…'}
-          className="block w-full resize-y rounded-xl border border-line-strong bg-surface px-3.5 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-subtle focus:border-brand focus:outline-none"
-        />
-        {text && (
-          <div className="pointer-events-none absolute right-3 bottom-2 font-mono text-[11px] text-ink-subtle">
-            {text.trim().split(/\s+/).filter(Boolean).length} words
-          </div>
-        )}
+      <div className="mt-4 mb-1.5 flex items-baseline justify-between gap-2">
+        <label htmlFor="source-text" className="block text-xs font-medium text-ink-muted">
+          {file ? 'Extra context for the AI (optional)' : 'Or paste text'}
+        </label>
+        {words > 0 && <span className="font-mono text-[11px] text-ink-subtle">{words.toLocaleString('en-IN')} words</span>}
       </div>
+      <textarea
+        id="source-text"
+        value={text}
+        onChange={(e) => onText(e.target.value)}
+        rows={file ? 3 : 5}
+        placeholder={file ? 'e.g. Focus on what citizens should do' : 'Paste an advisory, report, article or brief…'}
+        className="block w-full resize-y rounded-xl border border-line-strong bg-surface px-3.5 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-subtle focus:border-brand"
+        aria-describedby={text.length > MAX_CHARS ? 'source-too-long' : undefined}
+      />
+      {text.length > MAX_CHARS && (
+        <p id="source-too-long" className="mt-1.5 text-xs text-warn-ink">
+          Only the first {MAX_CHARS.toLocaleString('en-IN')} characters are used. Trim the text or upload the document instead.
+        </p>
+      )}
     </section>
   )
 }
 
-function FilePreview({ file, onRemove }: { file: File; onRemove: () => void }) {
+function FilePreview({ file, onRemove, removeRef }: { file: File; onRemove: () => void; removeRef: (el: HTMLElement | null) => void }) {
   const kind = kindOf(file)
   const url = useMemo(() => (kind === 'image' || kind === 'video' || kind === 'audio' ? URL.createObjectURL(file) : null), [file, kind])
   const [snippet, setSnippet] = useState<string | null>(null)
@@ -195,6 +219,7 @@ function FilePreview({ file, onRemove }: { file: File; onRemove: () => void }) {
           </p>
         </div>
         <button
+          ref={removeRef}
           type="button"
           onClick={onRemove}
           aria-label={`Remove ${file.name}`}

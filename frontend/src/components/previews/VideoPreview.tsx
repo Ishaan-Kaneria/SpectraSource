@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { arr, str, type Scene, type VideoPackage } from '../../lib/content'
 import { cx } from '../../lib/cx'
 
-const SCENE_TINTS = ['#0f6e70', '#1d4f91', '#8a4b0f', '#5b6b2a', '#7a2e3a', '#355c7d', '#6b4e16', '#2f6f4f']
+// Brand-derived hues (teal, navy, saffron, slate) so the timeline reads as one family.
+const SCENE_TINTS = ['#0f6e70', '#1d4f91', '#9a5b10', '#2f5d78', '#0b7a6e', '#43507a', '#7a4a12', '#265e6b']
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 
 export function VideoPreview({ value }: { value: VideoPackage }) {
@@ -55,7 +56,7 @@ export function VideoPreview({ value }: { value: VideoPackage }) {
 
       {scene && (
         <div className="overflow-hidden rounded-xl bg-[#0b1626] shadow-pop">
-          <div className="@container relative aspect-video">
+          <div className="@container relative aspect-[4/3] sm:aspect-video">
             <motion.div
               key={idx}
               initial={{ opacity: 0.4, scale: 1.04 }}
@@ -65,18 +66,18 @@ export function VideoPreview({ value }: { value: VideoPackage }) {
               style={{ background: `radial-gradient(120% 100% at 30% 20%, ${SCENE_TINTS[idx % SCENE_TINTS.length]} 0%, #0b1626 70%)` }}
             />
             <div className="absolute inset-0 flex flex-col p-[4cqw] text-white">
-              <div className="flex items-center gap-[1.2cqw] font-mono text-[1.7cqw] text-white/80">
-                <Clapperboard className="size-[2.4cqw]" aria-hidden />
+              <div className="flex items-center gap-1.5 font-mono text-[max(10px,1.7cqw)] leading-none text-white/80">
+                <Clapperboard className="size-[max(12px,2.4cqw)]" aria-hidden />
                 SCENE {scene.number ?? idx + 1} · {scene.duration_seconds}s
               </div>
-              <p className="mt-[2cqw] max-w-[75%] text-[2.2cqw] leading-snug text-white/75 italic">{str(scene.visual)}</p>
+              <p className="mt-[2cqw] max-w-[80%] text-[max(11px,2.2cqw)] leading-snug text-white/80 italic">{str(scene.visual)}</p>
               <div className="mt-auto">
                 {str(scene.on_screen_text) && (
-                  <div className="mb-[2cqw] inline-block border-l-[0.7cqw] border-[#f2a93b] bg-black/55 px-[2cqw] py-[1cqw] font-display text-[3.2cqw] leading-tight font-semibold">
+                  <div className="mb-[2cqw] inline-block border-l-4 border-[#f2a93b] bg-black/55 px-[2cqw] py-[1cqw] font-display text-[max(13px,3.2cqw)] leading-tight font-semibold">
                     {scene.on_screen_text}
                   </div>
                 )}
-                <p className="mx-auto max-w-[85%] rounded bg-black/70 px-[1.5cqw] py-[0.6cqw] text-center text-[2cqw] leading-snug">
+                <p className="mx-auto max-w-[92%] rounded bg-black/70 px-[1.5cqw] py-[0.6cqw] text-center text-[max(11px,2cqw)] leading-snug">
                   {str(scene.narration)}
                 </p>
               </div>
@@ -95,12 +96,12 @@ export function VideoPreview({ value }: { value: VideoPackage }) {
               type="range"
               min={0}
               max={total}
-              step={0.1}
+              step={1}
               value={t}
               onChange={(e) => setT(Number(e.target.value))}
               aria-label="Storyboard position"
               aria-valuetext={`${clock(t)} of ${clock(total)}, scene ${idx + 1}`}
-              className="h-1.5 min-w-0 flex-1 cursor-pointer accent-[#2ec4b6]"
+              className="h-6 min-w-0 flex-1 cursor-pointer accent-[#2ec4b6]"
             />
             <span className="shrink-0 font-mono text-xs text-white/80">
               {clock(t)} / {clock(total)}
@@ -111,35 +112,33 @@ export function VideoPreview({ value }: { value: VideoPackage }) {
 
       <div>
         <h4 className="mb-2 text-xs font-semibold tracking-wide text-ink-muted uppercase">Timeline</h4>
-        <div className="flex h-14 gap-1 overflow-hidden rounded-lg" role="list" aria-label="Scenes">
+        <ul className="flex h-14 gap-1 p-0.5" aria-label="Scenes">
           {scenes.map((s, i) => (
-            <button
-              key={i}
-              type="button"
-              role="listitem"
-              onClick={() => {
-                setT(starts[i])
-              }}
-              aria-label={`Scene ${i + 1}, ${s.duration_seconds} seconds: ${str(s.on_screen_text) || str(s.visual)}`}
-              aria-current={i === idx ? 'true' : undefined}
-              style={{ flexGrow: s.duration_seconds, background: SCENE_TINTS[i % SCENE_TINTS.length] }}
-              className={cx(
-                'relative min-w-8 basis-0 overflow-hidden rounded-md px-2 py-1.5 text-left text-white transition-[filter,box-shadow]',
-                i === idx ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface' : 'brightness-75 hover:brightness-95',
-              )}
-            >
-              <span className="block font-mono text-[11px] font-semibold">S{i + 1}</span>
-              <span className="block truncate text-[11px] opacity-90">{s.duration_seconds}s</span>
-              {i === idx && (
-                <span
-                  aria-hidden
-                  className="absolute bottom-0 left-0 h-1 bg-white"
-                  style={{ width: `${Math.min(100, ((t - starts[i]) / s.duration_seconds) * 100)}%` }}
-                />
-              )}
-            </button>
+            <li key={i} className="flex min-w-8 basis-0" style={{ flexGrow: s.duration_seconds }}>
+              <button
+                type="button"
+                onClick={() => setT(starts[i])}
+                aria-label={`Scene ${i + 1}, ${s.duration_seconds} seconds: ${str(s.on_screen_text) || str(s.visual)}`}
+                aria-current={i === idx ? 'true' : undefined}
+                style={{ background: SCENE_TINTS[i % SCENE_TINTS.length] }}
+                className={cx(
+                  'relative w-full overflow-hidden rounded-md px-2 py-1.5 text-left text-white transition-[filter,box-shadow]',
+                  i === idx ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface' : 'brightness-[0.82] hover:brightness-100',
+                )}
+              >
+                <span className="block font-mono text-[11px] font-semibold">S{i + 1}</span>
+                <span className="block truncate text-[11px]">{s.duration_seconds}s</span>
+                {i === idx && (
+                  <span
+                    aria-hidden
+                    className="absolute bottom-0 left-0 h-1 bg-white"
+                    style={{ width: `${Math.min(100, ((t - starts[i]) / s.duration_seconds) * 100)}%` }}
+                  />
+                )}
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
         <div className="mt-1 flex justify-between font-mono text-[11px] text-ink-muted" aria-hidden>
           <span>0:00</span>
           <span>{clock(total / 2)}</span>

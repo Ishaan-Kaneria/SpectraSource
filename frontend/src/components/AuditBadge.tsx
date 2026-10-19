@@ -93,6 +93,7 @@ export function ArtifactBadge({ artifactId, fallbackHash }: { artifactId: number
 
   return (
     <Popover
+      align="left"
       label="Output integrity"
       triggerClassName={cx(
         pill,
@@ -104,7 +105,7 @@ export function ArtifactBadge({ artifactId, fallbackHash }: { artifactId: number
         <>
           {state.kind === 'loading' ? <Spinner className="size-3.5" /> : ok ? <ShieldCheck className="size-4" /> : bad ? <ShieldX className="size-4" /> : <Fingerprint className="size-4" />}
           <span>{state.kind === 'loading' ? 'Verifying' : ok ? 'Verified' : bad ? 'Mismatch' : 'SHA-256'}</span>
-          {hash && <span className="hidden font-mono opacity-80 md:inline">{hash.slice(0, 8)}</span>}
+          {hash && <span className="hidden font-mono md:inline">{hash.slice(0, 8)}</span>}
         </>
       }
     >

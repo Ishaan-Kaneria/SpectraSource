@@ -6,6 +6,6 @@ pydantic>=2.8
 pydantic-settings>=2.4
 python-multipart>=0.0.9
 httpx>=0.27
-pypdf>=4.3
+pypdf[crypto]>=4.3  # crypto: AES-encrypted PDFs that open without a password
 python-docx>=1.1
 python-pptx>=1.0

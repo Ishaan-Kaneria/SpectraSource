@@ -1,6 +1,5 @@
-import { History, Monitor, Moon, RefreshCw, Sun } from 'lucide-react'
+import { History, Moon, RefreshCw, Sun } from 'lucide-react'
 import { API_BASE } from '../api'
-import type { ThemeMode } from '../hooks/useTheme'
 import { ChainBadge } from './AuditBadge'
 import { BrandMark } from './Brand'
 import { Spinner } from './ui'
@@ -8,40 +7,41 @@ import { cx } from '../lib/cx'
 
 export type ServerState = { state: 'checking' | 'ready' | 'down'; provider?: string; detail?: string }
 
-const NEXT: Record<ThemeMode, ThemeMode> = { system: 'light', light: 'dark', dark: 'system' }
-const THEME_ICON = { system: Monitor, light: Sun, dark: Moon }
-
 export function Header({
   server,
   onRetry,
-  theme,
-  onTheme,
+  dark,
+  onToggleTheme,
   onHistory,
+  historyOpen,
   ledgerKey,
 }: {
   server: ServerState
   onRetry: () => void
-  theme: ThemeMode
-  onTheme: (m: ThemeMode) => void
+  dark: boolean
+  onToggleTheme: () => void
   onHistory: () => void
+  historyOpen: boolean
   ledgerKey: unknown
 }) {
-  const ThemeIcon = THEME_ICON[theme]
+  const ThemeIcon = dark ? Sun : Moon
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-[1680px] items-center gap-3 px-4 lg:px-6">
+    <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-[1680px] items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:px-6">
         <button
           type="button"
           onClick={onHistory}
           aria-label="Open history"
-          className="grid size-10 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-ink xl:hidden"
+          aria-expanded={historyOpen}
+          aria-haspopup="dialog"
+          className="grid size-10 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-ink min-[1440px]:hidden"
         >
           <History className="size-5" />
         </button>
         <a href="/" className="flex min-w-0 items-center gap-2.5 rounded-lg">
-          <BrandMark className="size-8 shrink-0" />
+          <BrandMark className="size-7 shrink-0 sm:size-8" />
           <span className="min-w-0">
-            <span className="block truncate font-display text-lg leading-tight font-semibold tracking-tight text-ink">SpectraSource</span>
+            <span className="block truncate font-display text-base leading-tight font-semibold tracking-tight text-ink sm:text-lg">SpectraSource</span>
             <span className="hidden text-xs leading-tight text-ink-muted sm:block">One source, every format, a verifiable trail</span>
           </span>
         </a>
@@ -51,9 +51,9 @@ export function Header({
           {server.state === 'ready' && <ChainBadge refreshKey={ledgerKey} />}
           <button
             type="button"
-            onClick={() => onTheme(NEXT[theme])}
-            aria-label={`Theme: ${theme}. Switch to ${NEXT[theme]}`}
-            title={`Theme: ${theme}`}
+            onClick={onToggleTheme}
+            aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={dark ? 'Light theme' : 'Dark theme'}
             className="grid size-10 place-items-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-ink"
           >
             <ThemeIcon className="size-5" />
@@ -97,7 +97,8 @@ function ServerPill({ server, onRetry }: { server: ServerState; onRetry: () => v
         <>
           <span aria-hidden className={cx('size-2 rounded-full', mock ? 'bg-warn' : 'bg-ok')} />
           <span className="hidden md:inline">{mock ? 'Demo AI (offline mock)' : `AI: ${server.provider}`}</span>
-          <span className="sr-only md:hidden">{mock ? 'Demo AI (offline mock)' : 'Server online'}</span>
+          <span className="md:hidden">{mock ? 'Demo' : 'Live'}</span>
+          <span className="sr-only md:hidden">{mock ? 'AI (offline mock)' : 'server online'}</span>
         </>
       )}
     </span>

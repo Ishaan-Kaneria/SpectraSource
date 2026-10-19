@@ -75,7 +75,7 @@ export function InfographicPreview({ value }: { value: Infographic }) {
   return (
     <div className="space-y-3">
       <figure
-        className="@container mx-auto max-w-2xl overflow-hidden rounded-xl shadow-pop ring-1 ring-black/10"
+        className="@container mx-auto max-w-2xl overflow-hidden rounded-xl leading-snug shadow-pop ring-1 ring-black/10 dark:ring-white/10"
         style={{ background: bg, color: ink }}
         aria-label={`Infographic: ${str(value.title)}`}
       >
@@ -85,38 +85,38 @@ export function InfographicPreview({ value }: { value: Infographic }) {
             className="absolute -top-[10cqw] -right-[10cqw] size-[40cqw] rounded-full opacity-25 blur-2xl"
             style={{ background: accents[0] }}
           />
-          <p className="relative font-mono text-[2.2cqw] tracking-[0.25em] uppercase opacity-80">Public awareness</p>
-          <h3 className="relative mt-[1.5cqw] font-display text-[6.4cqw] leading-[1.05] font-bold text-balance">{str(value.title)}</h3>
-          <p className="relative mt-[1.5cqw] text-[3cqw] leading-snug opacity-85">{str(value.subtitle)}</p>
+          <p className="relative font-mono text-[max(10px,2.2cqw)] leading-none tracking-[0.25em] uppercase opacity-80">Public awareness</p>
+          <h3 className="relative mt-[2cqw] font-display text-[max(22px,6.4cqw)] leading-[1.05] font-bold text-balance">{str(value.title)}</h3>
+          <p className="relative mt-[1.5cqw] text-[max(13px,3cqw)] leading-snug opacity-85">{str(value.subtitle)}</p>
         </div>
 
         <div className="mx-[6cqw] rounded-[2cqw] p-[3.5cqw]" style={{ background: accents[0], color: onColor(accents[0]) }}>
-          <p className="text-[3.4cqw] leading-snug font-semibold">{str(value.key_message)}</p>
+          <p className="text-[max(14px,3.4cqw)] leading-snug font-semibold">{str(value.key_message)}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-[3cqw] p-[6cqw]">
+        <div className="grid grid-cols-1 gap-[3cqw] p-[6cqw] @sm:grid-cols-2">
           {sections.map((s, i) => {
             const Icon = iconFor(`${str(s.icon_suggestion)} ${str(s.heading)}`)
             const accent = accents[i % accents.length]
             return (
               <div key={i} className="rounded-[2cqw] p-[3.5cqw]" style={{ background: `${ink}12`, border: `1px solid ${ink}22` }}>
                 <span
-                  className="mb-[2cqw] grid size-[8cqw] place-items-center rounded-[1.6cqw]"
+                  className="mb-[2cqw] grid size-[max(32px,8cqw)] place-items-center rounded-[max(6px,1.6cqw)]"
                   style={{ background: accent, color: onColor(accent) }}
                 >
-                  <Icon className="size-[4.6cqw]" aria-hidden />
+                  <Icon className="size-[max(18px,4.6cqw)]" aria-hidden />
                 </span>
-                <p className="font-display text-[5.2cqw] leading-none font-bold">{str(s.key_stat_or_fact)}</p>
-                <p className="mt-[1.5cqw] text-[2.9cqw] font-semibold">{str(s.heading)}</p>
-                <p className="mt-[1cqw] text-[2.5cqw] leading-snug opacity-80">{str(s.supporting_text)}</p>
+                <p className="font-display text-[max(22px,5.2cqw)] leading-none font-bold">{str(s.key_stat_or_fact)}</p>
+                <p className="mt-[1.5cqw] text-[max(13px,2.9cqw)] leading-tight font-semibold">{str(s.heading)}</p>
+                <p className="mt-[1cqw] text-[max(12px,2.5cqw)] leading-snug opacity-85">{str(s.supporting_text)}</p>
               </div>
             )
           })}
         </div>
 
         <div className="flex items-center justify-between gap-[3cqw] px-[6cqw] py-[4cqw]" style={{ background: accents[1] ?? accents[0], color: onColor(accents[1] ?? accents[0]) }}>
-          <p className="text-[3.2cqw] leading-snug font-bold">{str(value.call_to_action)}</p>
-          <span className="shrink-0 font-mono text-[2cqw] opacity-80">SpectraSource</span>
+          <p className="text-[max(13px,3.2cqw)] leading-snug font-bold">{str(value.call_to_action)}</p>
+          <span className="shrink-0 font-mono text-[max(10px,2cqw)] leading-none opacity-80">SpectraSource</span>
         </div>
       </figure>
 
