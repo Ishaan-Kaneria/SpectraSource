@@ -1,14 +1,29 @@
 import type { GenerationParams, Job, OutputType } from './types'
 
-const BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
+export const API_BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
+const BASE = API_BASE
 
-// Free hosting puts the backend to sleep; the first request after a while can fail or take ~1 minute.
-async function call(input: string, init?: RequestInit): Promise<Response> {
+// Free hosting puts the backend to sleep; the first request after a while can take ~1 minute.
+// Time out instead of leaving the UI stuck forever.
+async function call(input: string, init?: RequestInit, timeoutMs = 120_000): Promise<Response> {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
-    return await fetch(input, init)
-  } catch {
-    throw new Error(`Can't reach the backend at ${BASE}. If it is hosted on a free plan it may be waking up; try again in a minute.`)
+    return await fetch(input, { ...init, signal: ctrl.signal })
+  } catch (e) {
+    const timedOut = e instanceof DOMException && e.name === 'AbortError'
+    throw new Error(
+      timedOut
+        ? `The backend at ${BASE} did not answer within ${Math.round(timeoutMs / 1000)} seconds.`
+        : `Can't reach the backend at ${BASE}. Check that it is deployed and running.`,
+    )
+  } finally {
+    clearTimeout(timer)
   }
+}
+
+export async function health(): Promise<{ status: string; llm_provider: string }> {
+  return handle(await call(`${BASE}/health`, undefined, 90_000))
 }
 
 async function handle<T>(res: Response): Promise<T> {
@@ -39,7 +54,7 @@ export async function createJob(input: {
 }
 
 export async function getJob(id: number): Promise<Job> {
-  return handle(await call(`${BASE}/api/jobs/${id}`))
+  return handle(await call(`${BASE}/api/jobs/${id}`, undefined, 30_000))
 }
 
 export const downloadUrl = (artifactId: number, fmt: string) =>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createJob, downloadUrl, getJob } from './api'
+import { API_BASE, createJob, downloadUrl, getJob, health } from './api'
 import { ContentView } from './components/ContentView'
 import { OUTPUT_TYPES, labelFor, type GenerationParams, type Job, type OutputType } from './types'
 
@@ -38,6 +38,22 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const [server, setServer] = useState<{ state: 'checking' | 'ready' | 'down'; detail: string }>({
+    state: 'checking',
+    detail: 'Connecting to server (a sleeping free server takes up to a minute)...',
+  })
+
+  useEffect(() => {
+    health()
+      .then((h) =>
+        setServer({
+          state: 'ready',
+          detail: h.llm_provider === 'mock' ? 'Server ready (mock AI: placeholder output)' : `Server ready (${h.llm_provider})`,
+        }),
+      )
+      .catch((e) => setServer({ state: 'down', detail: e instanceof Error ? e.message : String(e) }))
+  }, [])
+
   // Poll until every artefact has finished.
   useEffect(() => {
     if (!job || job.status === 'done' || job.status === 'failed') return
@@ -71,7 +87,18 @@ export default function App() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <h1 className="text-lg font-semibold text-slate-900">SpectraSource</h1>
-          <span className="text-sm text-slate-500">One source, every format</span>
+          <span
+            title={API_BASE}
+            className={`max-w-[60%] truncate rounded-full px-3 py-1 text-xs ${
+              server.state === 'ready'
+                ? 'bg-emerald-100 text-emerald-800'
+                : server.state === 'down'
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-amber-100 text-amber-800'
+            }`}
+          >
+            {server.detail}
+          </span>
         </div>
       </header>
 
