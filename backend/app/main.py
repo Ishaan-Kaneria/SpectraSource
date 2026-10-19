@@ -28,6 +28,11 @@ app.add_middleware(
 app.include_router(jobs_router)
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {"name": "SpectraSource API", "status": "running", "health": "/health", "docs": "/docs"}
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "llm_provider": get_settings().llm_provider}

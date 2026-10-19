@@ -18,6 +18,7 @@ def _create(client, types, **kw):
 
 def test_health(client):
     assert client.get("/health").json()["status"] == "ok"
+    assert client.get("/").json()["status"] == "running"
 
 
 def test_all_output_types_generate(client):
