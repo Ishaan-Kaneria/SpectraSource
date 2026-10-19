@@ -16,13 +16,27 @@ An operator pastes or uploads source content, picks one or more output formats, 
 
 Each output can be downloaded as a ready-to-use file: `.pptx` slides with speaker notes, `.docx` advisories and briefings, `.srt` subtitles, an HTML infographic preview, or Markdown.
 
-Every job and every generated artefact is recorded in a **hash-chained audit log** (`GET /api/audit/verify` detects any tampering), and each artefact carries a SHA-256 content hash.
+Every job and every generated artefact is recorded in a **hash-chained audit log** (`GET /api/audit/verify` detects any tampering), and each artefact carries a SHA-256 content hash that the dashboard checks per file.
+
+![SpectraSource dashboard](docs/screenshots/after-desktop-light.png)
+
+**Live demo:** https://specrtrasource.netlify.app (the free backend sleeps when idle, so the first request can take about a minute).
+
+## Documentation
+
+| Deliverable | File |
+|---|---|
+| Architecture document (2 pages) | [docs/SpectraSource-Architecture.pdf](docs/SpectraSource-Architecture.pdf), also as [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Technical presentation (5 slides) | [docs/SIH26154-Out-of-Tokens-Technical-Presentation.pptx](docs/SIH26154-Out-of-Tokens-Technical-Presentation.pptx) |
+| UI design notes | [frontend/DESIGN.md](frontend/DESIGN.md) |
+| Screenshots | [docs/screenshots/](docs/screenshots/) |
 
 ## Repository layout
 
 ```
 backend/             FastAPI API, LLM provider layer, ingestion, generators, audit chain, tests
 frontend/            React + Vite + TypeScript + Tailwind dashboard
+docs/                Architecture document, technical presentation, screenshots
 docker-compose.yml   Postgres (pgvector) + backend
 netlify.toml         Frontend deploy config for Netlify
 ```
@@ -53,6 +67,8 @@ npm run dev                   # http://localhost:5173
 ```
 
 API docs are at http://localhost:8000/docs.
+
+With no key set, the backend uses an offline mock provider that writes realistic sample output, so the whole UI can be tried without an LLM. `MOCK_DELAY_SECONDS` slows it down to show live progress.
 
 ## Using a real LLM
 
@@ -86,9 +102,10 @@ CI runs both on every push and pull request.
 
 ## Deployment
 
-- **Backend on Render (free):** Render dashboard > **New > Blueprint** > select this repo. `render.yaml` builds `backend/Dockerfile` and asks for `LLM_API_KEY`. The free plan sleeps when idle (the first request then takes about a minute) and its disk resets on redeploy.
+- **Backend on Render (free):** Render dashboard > **New > Web Service** > this repo, with Language **Docker**, Root Directory `backend`, Instance Type **Free** and Health Check Path `/health`. Add the environment variables `LLM_PROVIDER=gemini`, `LLM_API_KEY`, `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` (values in `render.yaml`; **New > Blueprint** can also read that file). The free plan sleeps when idle (the first request then takes about a minute) and its disk resets on redeploy, so job history is not permanent.
 - **Frontend on Netlify:** `netlify.toml` builds `frontend/` and points `VITE_API_URL` at `https://spectrasource-api.onrender.com`. If Render assigns a different URL, update that line.
 - CORS allows the Netlify site and its deploy previews (`CORS_ORIGINS`, `CORS_ORIGIN_REGEX`).
+- Every push to `main` redeploys both.
 
 ## API
 
@@ -96,10 +113,12 @@ CI runs both on every push and pull request.
 |---|---|---|
 | POST | `/api/jobs` | Multipart form: `output_types` (JSON list), `params` (JSON), `text` and/or `file`. Returns 202 with the job. |
 | GET | `/api/jobs/{id}` | Job status and generated artefacts |
-| GET | `/api/jobs` | Recent jobs |
+| GET | `/api/jobs?limit=&offset=` | Job history, newest first, with each job's source preview and output statuses |
 | GET | `/api/artifacts/{id}/download?fmt=` | Download an artefact as `md`, `json`, `docx`, `pptx`, `srt` or `html` (depends on type) |
 | GET | `/api/output-types` | Supported output types |
-| GET | `/api/audit/verify` | Verify the audit hash chain |
+| GET | `/api/audit/verify` | Verify the whole audit hash chain |
+| GET | `/api/artifacts/{id}/verify` | Check one artefact's content against the hash recorded in the chain |
+| GET | `/health` | Liveness and the active LLM provider |
 
 ## Roadmap
 
