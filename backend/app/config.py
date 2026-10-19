@@ -1,13 +1,18 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str = "postgresql+psycopg://spectra:spectra@localhost:5432/spectra"
+    # SQLite file by default so a first run needs no database server.
+    # docker-compose and production point this at Postgres.
+    database_url: str = "sqlite:///./spectra.db"
     cors_origins: str = "http://localhost:5173"
+    # Extra origins matched by regex, e.g. Netlify deploy previews.
+    cors_origin_regex: str = ""
 
     # "mock" needs no key and returns canned output, so the app runs end to end offline.
     # "gemini" uses Google Gemini for text, images and video with one key.
@@ -27,6 +32,12 @@ class Settings(BaseSettings):
 
     max_upload_mb: int = 25
     max_source_chars: int = 60_000
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _empty_database_url(cls, v: str | None) -> str:
+        # `DATABASE_URL=` with nothing after it means "use the default".
+        return v or "sqlite:///./spectra.db"
 
     @property
     def cors_origin_list(self) -> list[str]:

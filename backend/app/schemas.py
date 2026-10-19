@@ -1,11 +1,11 @@
 from datetime import datetime
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class OutputType(StrEnum):
+class OutputType(str, Enum):
     video = "video"
     linkedin = "linkedin"
     twitter = "twitter"
@@ -24,7 +24,7 @@ class GenerationParams(BaseModel):
     style: str = "clear and factual"
 
 
-class JobStatus(StrEnum):
+class JobStatus(str, Enum):
     pending = "pending"
     running = "running"
     done = "done"

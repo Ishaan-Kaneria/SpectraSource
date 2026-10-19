@@ -29,34 +29,26 @@ netlify.toml         Frontend deploy config for Netlify
 
 ## Quick start
 
-Prerequisites: Python 3.12+, Node 22+, and either Docker or a local PostgreSQL 16.
+Prerequisites: Python 3.10+ and Node 22+. No database server needed: the backend uses a local SQLite file unless `DATABASE_URL` says otherwise.
+
+**Backend** (terminal 1)
 
 ```bash
-cp .env.example .env          # defaults use the offline "mock" LLM, no key needed
-```
-
-**Option A: Docker for database and backend**
-
-```bash
-docker compose up --build     # API on http://localhost:8000
-```
-
-**Option B: run the backend directly**
-
-```bash
-docker compose up -d db       # or point DATABASE_URL at your own Postgres
 cd backend
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+cp ../.env.example .env       # then set LLM_PROVIDER=gemini and LLM_API_KEY (see below)
+python -m venv .venv
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
-uvicorn app.main:app --reload --env-file ../.env
+uvicorn app.main:app --reload # http://localhost:8000/health
 ```
+
+**Or with Docker** (backend + Postgres): put `.env` at the repo root and run `docker compose up --build`.
 
 **Frontend**
 
 ```bash
 cd frontend
-cp .env.example .env          # VITE_API_URL=http://localhost:8000
-npm install
+npm install                   # talks to http://localhost:8000 unless VITE_API_URL is set
 npm run dev                   # http://localhost:5173
 ```
 
@@ -94,8 +86,9 @@ CI runs both on every push and pull request.
 
 ## Deployment
 
-- **Frontend on Netlify.** `netlify.toml` builds `frontend/`. In Netlify site settings set `VITE_API_URL` to the backend URL.
-- **Backend and database** on any container host (Render, Railway, AWS ECS). Use `backend/Dockerfile`, a Postgres with pgvector, and set `DATABASE_URL`, `CORS_ORIGINS` (include the Netlify URL) and the `LLM_*` variables.
+- **Backend on Render (free):** Render dashboard > **New > Blueprint** > select this repo. `render.yaml` builds `backend/Dockerfile` and asks for `LLM_API_KEY`. The free plan sleeps when idle (the first request then takes about a minute) and its disk resets on redeploy.
+- **Frontend on Netlify:** `netlify.toml` builds `frontend/` and points `VITE_API_URL` at `https://spectrasource-api.onrender.com`. If Render assigns a different URL, update that line.
+- CORS allows the Netlify site and its deploy previews (`CORS_ORIGINS`, `CORS_ORIGIN_REGEX`).
 
 ## API
 

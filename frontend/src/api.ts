@@ -2,6 +2,15 @@ import type { GenerationParams, Job, OutputType } from './types'
 
 const BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
+// Free hosting puts the backend to sleep; the first request after a while can fail or take ~1 minute.
+async function call(input: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init)
+  } catch {
+    throw new Error(`Can't reach the backend at ${BASE}. If it is hosted on a free plan it may be waking up; try again in a minute.`)
+  }
+}
+
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = res.statusText
@@ -26,11 +35,11 @@ export async function createJob(input: {
   form.append('params', JSON.stringify(input.params))
   if (input.text.trim()) form.append('text', input.text)
   if (input.file) form.append('file', input.file)
-  return handle(await fetch(`${BASE}/api/jobs`, { method: 'POST', body: form }))
+  return handle(await call(`${BASE}/api/jobs`, { method: 'POST', body: form }))
 }
 
 export async function getJob(id: number): Promise<Job> {
-  return handle(await fetch(`${BASE}/api/jobs/${id}`))
+  return handle(await call(`${BASE}/api/jobs/${id}`))
 }
 
 export const downloadUrl = (artifactId: number, fmt: string) =>

@@ -16,3 +16,10 @@ def test_prompt_wraps_source_and_params():
 def test_mock_output_validates_against_each_schema():
     for t in OutputType:
         assert generate(MockProvider(), t, "x", GenerationParams())
+
+
+def test_empty_database_url_falls_back_to_sqlite(monkeypatch):
+    from app.config import Settings
+
+    monkeypatch.setenv("DATABASE_URL", "")
+    assert Settings().database_url.startswith("sqlite:///")
