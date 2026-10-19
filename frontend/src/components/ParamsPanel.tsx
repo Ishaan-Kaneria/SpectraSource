@@ -55,7 +55,7 @@ export function ParamsPanel({ params, onChange }: { params: GenerationParams; on
         className="flex w-full items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-left text-sm hover:bg-surface-2"
       >
         <span className="min-w-0 flex-1 truncate text-ink-muted">
-          <span className="text-ink capitalize">{params.audience}</span> · {params.tone} · {params.language}
+          <span className="text-ink">{params.audience}</span> · {params.language}
         </span>
         <span className="shrink-0 text-xs font-medium text-brand-ink">{open ? 'Done' : 'Edit'}</span>
         <ChevronDown className={cx('size-4 shrink-0 text-ink-muted transition-transform', open && 'rotate-180')} aria-hidden />

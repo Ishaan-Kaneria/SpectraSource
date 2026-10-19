@@ -130,7 +130,7 @@ export function SourceInput({
                 </button>{' '}
                 or drag it here
               </p>
-              <p className="text-xs text-ink-muted">PDF, DOCX, text, images, video or audio · up to 25 MB</p>
+              <p className="text-xs text-balance text-ink-muted">PDF, DOCX, text, image, audio or video · max 25 MB</p>
               <input
                 ref={input}
                 type="file"

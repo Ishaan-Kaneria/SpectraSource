@@ -75,9 +75,10 @@ function HistoryList({ jobs, error, activeId, onSelect, onNew, onRefresh, onClos
                     <div className="flex items-center gap-2">
                       <StatusDot status={j.status} />
                       <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{title}</span>
+                      <span className="shrink-0 text-[11px] text-ink-muted">{timeAgo(j.created_at)}</span>
                     </div>
-                    <div className="mt-1.5 flex items-center justify-between gap-2 pl-4">
-                      <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+                    <div className="mt-1.5 flex items-center gap-2 pl-4">
+                      <div className="flex min-w-0 flex-wrap items-center gap-1">
                         <span className="mr-1 font-mono text-[11px] text-ink-muted">#{j.id}</span>
                         {j.output_types.slice(0, 7).map((t) => {
                           const S = FORMAT_STYLE[t]
@@ -88,7 +89,6 @@ function HistoryList({ jobs, error, activeId, onSelect, onNew, onRefresh, onClos
                           , {j.output_types.length} formats: {j.output_types.map(labelFor).join(', ')}
                         </span>
                       </div>
-                      <span className="shrink-0 text-xs text-ink-muted">{timeAgo(j.created_at)}</span>
                     </div>
                   </button>
                 </li>

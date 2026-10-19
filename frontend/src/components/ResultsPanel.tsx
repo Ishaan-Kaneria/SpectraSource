@@ -134,14 +134,14 @@ function JobResults({ job, onNew }: { job: Job; onNew: () => void }) {
                   sel ? 'border-brand/60 bg-brand-soft' : 'border-transparent hover:bg-surface-2',
                 )}
               >
-                <span className={cx('grid size-8 place-items-center rounded-lg', S.chip)}>
+                <span className={cx('relative grid size-8 place-items-center rounded-lg', S.chip)}>
                   <S.icon className="size-[18px]" aria-hidden />
+                  <span className="absolute -top-1.5 -right-1.5">
+                    <TabStatus status={a.status} />
+                  </span>
                 </span>
                 <span className={cx('hidden w-full truncate text-center text-xs sm:block', sel ? 'font-semibold text-ink' : 'text-ink-muted')}>
                   {shortLabelFor(a.output_type)}
-                </span>
-                <span className="absolute top-1 right-1">
-                  <TabStatus status={a.status} />
                 </span>
                 {sel && <motion.span layoutId="tab-underline" className={cx('absolute inset-x-3 -bottom-px h-0.5 rounded-full', S.bar)} />}
               </button>
@@ -154,10 +154,9 @@ function JobResults({ job, onNew }: { job: Job; onNew: () => void }) {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={`${active?.id}-${active?.status}`}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.16, ease: [0.22, 1, 0.36, 1] } }}
+            exit={{ opacity: 0, transition: { duration: 0.06 } }}
           >
             {active && <ArtifactBody artifact={active} job={job} />}
           </motion.div>
@@ -193,7 +192,7 @@ function ArtifactBody({ artifact, job }: { artifact: Artifact; job: Job }) {
       </div>
     )
   }
-  if (artifact.status !== 'done' || !artifact.content) return <GeneratingSkeleton artifact={artifact} />
+  if (artifact.status !== 'done' || !artifact.content) return <GeneratingSkeleton artifact={artifact} jobActive={job.status === 'running'} />
 
   const content = artifact.content
   const copy = async () => {
@@ -272,7 +271,7 @@ function DownloadMenu({ artifact }: { artifact: Artifact }) {
   )
 }
 
-function GeneratingSkeleton({ artifact }: { artifact: Artifact }) {
+function GeneratingSkeleton({ artifact, jobActive }: { artifact: Artifact; jobActive: boolean }) {
   const S = FORMAT_STYLE[artifact.output_type]
   const still = useReducedMotion()
   return (
@@ -290,7 +289,11 @@ function GeneratingSkeleton({ artifact }: { artifact: Artifact }) {
         </span>
       </div>
       <p className="text-sm font-semibold text-ink">
-        {artifact.status === 'running' ? `Writing the ${labelFor(artifact.output_type).toLowerCase()}…` : `${labelFor(artifact.output_type)} is queued`}
+        {artifact.status === 'running'
+          ? `Writing the ${labelFor(artifact.output_type).toLowerCase()}…`
+          : jobActive
+            ? `${labelFor(artifact.output_type)} is next in line…`
+            : `${labelFor(artifact.output_type)} is queued`}
       </p>
       <p className="mt-1 max-w-xs text-xs text-ink-muted">
         The AI returns structured JSON, which is checked against the format's schema before it is shown and hashed into the ledger.

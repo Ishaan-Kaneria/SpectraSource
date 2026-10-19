@@ -161,7 +161,13 @@ export default function App() {
   const jobRunning = job != null && !jobDone
   const doneCount = job?.artifacts.filter((a) => a.status === 'done' || a.status === 'failed').length ?? 0
   const canSubmit = selected.length > 0 && hasSource && !submitting && !jobRunning && server.state !== 'down'
-  const why = !hasSource ? 'Add a file or paste text to begin' : selected.length === 0 ? 'Pick at least one format' : null
+  const why = !hasSource
+    ? job
+      ? `Viewing pack #${job.id}. Add a source to make a new one.`
+      : 'Add a file or paste text to begin'
+    : selected.length === 0
+      ? 'Pick at least one format'
+      : null
 
   return (
     <MotionConfig reducedMotion="user">
@@ -206,7 +212,7 @@ export default function App() {
                 </p>
               )}
 
-              <div className="sticky bottom-0 z-10 -mx-4 -mb-4 rounded-b-2xl border-t border-line bg-surface/95 p-4 backdrop-blur sm:-mx-5 sm:-mb-5 sm:p-5">
+              <div className="sticky bottom-0 z-10 -mx-4 -mb-4 rounded-b-2xl border-t border-line bg-surface p-4 shadow-[0_-8px_16px_-12px_rgb(0_0_0/0.25)] sm:-mx-5 sm:-mb-5 sm:p-5">
                 <Button type="submit" variant="primary" size="lg" aria-disabled={!canSubmit} className="w-full" aria-describedby="submit-why">
                   {submitting ? (
                     <>

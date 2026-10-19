@@ -55,7 +55,7 @@ export function VideoPreview({ value }: { value: VideoPackage }) {
       </div>
 
       {scene && (
-        <div className="overflow-hidden rounded-xl bg-[#0b1626] shadow-pop">
+        <div className="overflow-hidden rounded-xl bg-[#0b1626] shadow-pop dark:ring-1 dark:ring-white/10">
           <div className="@container relative aspect-[4/3] sm:aspect-video">
             <motion.div
               key={idx}

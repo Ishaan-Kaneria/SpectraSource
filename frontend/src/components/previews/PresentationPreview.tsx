@@ -45,7 +45,7 @@ export function PresentationPreview({ value }: { value: Presentation }) {
         aria-label={`Slides, ${i + 1} of ${pages.length}. Use arrow keys to move.`}
         className="group relative overflow-hidden rounded-xl bg-[#0b1626] shadow-pop ring-1 ring-black/10 dark:ring-white/10"
       >
-        <div className="@container relative aspect-square sm:aspect-video">
+        <div className="@container relative aspect-[4/3] sm:aspect-video">
           <AnimatePresence initial={false} custom={dir} mode="popLayout">
             <motion.div
               key={i}

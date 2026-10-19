@@ -56,6 +56,7 @@ export function Popover({
       >
         {trigger}
       </button>
+      {open && <div aria-hidden className="fixed inset-0 z-40 bg-scrim sm:hidden" onClick={() => setOpen(false)} />}
       <AnimatePresence>
         {open && (
           <motion.div

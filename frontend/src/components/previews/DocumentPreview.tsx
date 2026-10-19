@@ -44,13 +44,13 @@ export function AdvisoryPreview({ value, createdAt }: { value: Advisory; created
         <div className="flex items-center gap-3">
           <BrandMark className="size-10" />
           <div>
-            <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-ink-muted uppercase">
-              Security advisory
-              <span className="rounded-sm bg-[#0b1626] px-1.5 py-0.5 font-mono text-[10px] tracking-normal text-white dark:bg-surface-3 dark:text-ink" title="Traffic Light Protocol: may be shared publicly">
+            <p className="text-xs font-semibold tracking-[0.18em] whitespace-nowrap text-ink-muted uppercase">Security advisory</p>
+            <p className="flex items-center gap-2 font-mono text-sm text-ink">
+              {str(value.advisory_id)}
+              <span className="rounded-sm bg-[#0b1626] px-1.5 py-0.5 text-[10px] text-white dark:bg-surface-3 dark:text-ink" title="Traffic Light Protocol: may be shared publicly">
                 TLP:CLEAR
               </span>
             </p>
-            <p className="font-mono text-sm text-ink">{str(value.advisory_id)}</p>
           </div>
         </div>
         <div className="sm:text-right">
