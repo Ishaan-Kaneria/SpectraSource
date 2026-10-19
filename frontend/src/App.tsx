@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createJob, getJob } from './api'
+import { createJob, downloadUrl, getJob } from './api'
 import { ContentView } from './components/ContentView'
 import { OUTPUT_TYPES, labelFor, type GenerationParams, type Job, type OutputType } from './types'
 
@@ -165,12 +165,25 @@ export default function App() {
                 <>
                   <div className="mb-3 flex items-center justify-between gap-2 text-xs text-slate-500">
                     <span className="truncate" title={current.content_hash ?? ''}>SHA-256 {current.content_hash?.slice(0, 16)}...</span>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(JSON.stringify(current.content, null, 2))}
-                      className="rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50"
-                    >
-                      Copy JSON
-                    </button>
+                    <div className="flex flex-wrap gap-1.5">
+                      {current.export_formats
+                        .filter((f) => f !== 'json')
+                        .map((f) => (
+                          <a
+                            key={f}
+                            href={downloadUrl(current.id, f)}
+                            className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 font-medium uppercase text-indigo-700 hover:bg-indigo-100"
+                          >
+                            {f}
+                          </a>
+                        ))}
+                      <button
+                        onClick={() => navigator.clipboard.writeText(JSON.stringify(current.content, null, 2))}
+                        className="rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50"
+                      >
+                        Copy JSON
+                      </button>
+                    </div>
                   </div>
                   <ContentView value={current.content} />
                 </>

@@ -14,6 +14,8 @@ An operator pastes or uploads source content, picks one or more output formats, 
 | Executive summary | Bottom line, key points, implications, actions |
 | Presentation | Slides with bullets, speaker notes and visual suggestions |
 
+Each output can be downloaded as a ready-to-use file: `.pptx` slides with speaker notes, `.docx` advisories and briefings, `.srt` subtitles, an HTML infographic preview, or Markdown.
+
 Every job and every generated artefact is recorded in a **hash-chained audit log** (`GET /api/audit/verify` detects any tampering), and each artefact carries a SHA-256 content hash.
 
 ## Repository layout
@@ -93,6 +95,7 @@ CI runs both on every push and pull request.
 | POST | `/api/jobs` | Multipart form: `output_types` (JSON list), `params` (JSON), `text` and/or `file`. Returns 202 with the job. |
 | GET | `/api/jobs/{id}` | Job status and generated artefacts |
 | GET | `/api/jobs` | Recent jobs |
+| GET | `/api/artifacts/{id}/download?fmt=` | Download an artefact as `md`, `json`, `docx`, `pptx`, `srt` or `html` (depends on type) |
 | GET | `/api/output-types` | Supported output types |
 | GET | `/api/audit/verify` | Verify the audit hash chain |
 
@@ -100,6 +103,6 @@ CI runs both on every push and pull request.
 
 - Image input (OCR + vision captioning) and video/audio input (Whisper transcription)
 - RAG over long sources with pgvector so outputs cite source passages
-- File exports: `.pptx` for presentations, `.docx`/`.pdf` for advisories, `.srt` for subtitles, rendered infographics
+- PDF export and image rendering for infographics
 - Login with role-based access and a human approval step before publishing
 - Anchoring approved output hashes to a ledger

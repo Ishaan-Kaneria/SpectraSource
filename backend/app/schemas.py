@@ -38,6 +38,7 @@ class ArtifactOut(BaseModel):
     content: dict[str, Any] | None
     error: str | None
     content_hash: str | None
+    export_formats: list[str] = []
 
 
 class JobOut(BaseModel):

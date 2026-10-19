@@ -32,3 +32,6 @@ export async function createJob(input: {
 export async function getJob(id: number): Promise<Job> {
   return handle(await fetch(`${BASE}/api/jobs/${id}`))
 }
+
+export const downloadUrl = (artifactId: number, fmt: string) =>
+  `${BASE}/api/artifacts/${artifactId}/download?fmt=${encodeURIComponent(fmt)}`

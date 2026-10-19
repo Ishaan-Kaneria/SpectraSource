@@ -1,12 +1,13 @@
 import json
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import audit
 from app.config import get_settings
+from app.exporters import EXPORTS, MEDIA, render
 from app.db import get_db
 from app.ingest import UnsupportedSource, extract
 from app.models import Artifact, Job
@@ -40,6 +41,7 @@ def _job_out(job: Job) -> JobOut:
                 content=a.content,
                 error=a.error,
                 content_hash=a.content_hash,
+                export_formats=sorted(EXPORTS[OutputType(a.output_type)]),
             )
             for a in job.artifacts
         ],
@@ -141,3 +143,22 @@ def get_job(job_id: int, db: Session = Depends(get_db)) -> JobOut:
 def verify_audit(db: Session = Depends(get_db)) -> AuditVerifyOut:
     valid, entries, broken_at = audit.verify(db)
     return AuditVerifyOut(valid=valid, entries=entries, broken_at=broken_at)
+
+
+@router.get("/artifacts/{artifact_id}/download")
+def download_artifact(artifact_id: int, fmt: str = "md", db: Session = Depends(get_db)) -> Response:
+    artifact = db.get(Artifact, artifact_id)
+    if artifact is None:
+        raise HTTPException(404, "Artifact not found")
+    if artifact.status != "done" or artifact.content is None:
+        raise HTTPException(409, "Artifact is not ready")
+    try:
+        data = render(OutputType(artifact.output_type), fmt, artifact.content)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    filename = f"{artifact.output_type}-{artifact.job_id}.{fmt}"
+    return Response(
+        data,
+        media_type=MEDIA[fmt],
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

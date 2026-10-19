@@ -27,6 +27,7 @@ export interface Artifact {
   content: Record<string, unknown> | null
   error: string | null
   content_hash: string | null
+  export_formats: string[]
 }
 
 export interface Job {
