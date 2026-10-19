@@ -1,0 +1,14 @@
+# Netlify hosts only the frontend. Set VITE_API_URL in Netlify's environment
+# variables to wherever the backend is deployed.
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
