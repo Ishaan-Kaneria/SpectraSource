@@ -47,6 +47,8 @@ class OpenAICompatibleProvider:
             )
             r.raise_for_status()
             return r.json()["choices"][0]["message"]["content"]
+        except httpx.HTTPStatusError as e:
+            raise LLMError(f"LLM returned {e.response.status_code}: {_detail(e.response)}") from e
         except (httpx.HTTPError, KeyError, IndexError) as e:
             raise LLMError(f"LLM request failed: {e}") from e
 
@@ -115,3 +117,16 @@ def _parse_json(text: str) -> dict[str, Any]:
         return json.loads(text[start : end + 1])
     except json.JSONDecodeError as e:
         raise LLMError(f"LLM returned invalid JSON: {e}") from e
+
+
+def _detail(response: httpx.Response) -> str:
+    """Provider error message (e.g. 'API key not valid') without the whole payload."""
+    try:
+        body = response.json()
+        if isinstance(body, list) and body:
+            body = body[0]
+        err = body.get("error", body) if isinstance(body, dict) else body
+        msg = err.get("message") if isinstance(err, dict) else err
+        return str(msg)[:300]
+    except ValueError:
+        return response.text[:300]

@@ -86,3 +86,17 @@ def test_provider_factory_defaults(monkeypatch):
     finally:
         monkeypatch.setenv("LLM_PROVIDER", "mock")
         config.get_settings.cache_clear()
+
+
+def test_error_includes_provider_message(monkeypatch):
+    import pytest
+
+    from app.llm import LLMError
+
+    def handler(req):
+        return httpx.Response(400, json=[{"error": {"code": 400, "message": "API key not valid."}}])
+
+    p, post, _ = _provider(handler)
+    monkeypatch.setattr(httpx, "post", post)
+    with pytest.raises(LLMError, match="400: API key not valid"):
+        p.generate_json("s", "u", {})
